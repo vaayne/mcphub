@@ -18,7 +18,10 @@ jobs:
           go-version: "1.24"
 
       - name: Run tests
-        run: go test ./... -coverprofile=coverage.out
+        run: |
+          # Get packages with test files, excluding packages without tests to avoid covdata errors
+          PACKAGES=$(go list ./internal/... | grep -v '/testing$')
+          go test $PACKAGES -coverprofile=coverage.out
 
       - name: Build
         run: go build -o bin/mh .
