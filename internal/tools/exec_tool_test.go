@@ -6,15 +6,15 @@ import (
 	"testing"
 
 	"github.com/vaayne/mcpx/internal/client"
+	"github.com/vaayne/mcpx/internal/logging"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 func TestHandleExecuteTool_Success(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -48,7 +48,7 @@ func TestHandleExecuteTool_Success(t *testing.T) {
 }
 
 func TestHandleExecuteTool_WithLogs(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -82,7 +82,7 @@ func TestHandleExecuteTool_WithLogs(t *testing.T) {
 }
 
 func TestHandleExecuteTool_AsyncSuccess(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -114,7 +114,7 @@ func TestHandleExecuteTool_AsyncSuccess(t *testing.T) {
 }
 
 func TestHandleExecuteTool_MissingCode(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -135,7 +135,7 @@ func TestHandleExecuteTool_MissingCode(t *testing.T) {
 }
 
 func TestHandleExecuteTool_CodeTooLarge(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 

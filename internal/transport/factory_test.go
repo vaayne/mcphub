@@ -6,12 +6,12 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"go.uber.org/zap"
 	"github.com/vaayne/mcpx/internal/config"
+	"github.com/vaayne/mcpx/internal/logging"
 )
 
 func TestDefaultFactory_CreateTransport(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.NopLogger()
 	factory := NewDefaultFactory(logger)
 
 	tests := []struct {
@@ -176,7 +176,7 @@ func TestHeaderTransport_RoundTrip(t *testing.T) {
 }
 
 func TestGetHTTPClient(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.NopLogger()
 	factory := NewDefaultFactory(logger)
 
 	tests := []struct {

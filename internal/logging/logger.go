@@ -2,19 +2,17 @@ package logging
 
 import (
 	"fmt"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // loggerState holds the global logger state with thread-safe access
 var loggerState = struct {
 	mu     sync.Mutex
-	logger *zap.Logger
+	logger *slog.Logger
 	file   *os.File
 }{
 	logger: nil,
@@ -22,12 +20,12 @@ var loggerState = struct {
 }
 
 // Logger is the global logger instance (deprecated: use GetLogger() for thread-safe access)
-var Logger *zap.Logger
+var Logger *slog.Logger
 
 // Config holds logging configuration
 type Config struct {
 	// LogLevel sets the minimum log level (debug, info, warn, error)
-	LogLevel zapcore.Level
+	LogLevel slog.Level
 	// LogFilePath is the path to the log file (empty to disable file logging)
 	LogFilePath string
 }
@@ -58,52 +56,48 @@ func InitLogger(cfg Config) (*InitResult, error) {
 			// Log warning but continue - we're reinitializing anyway
 			if loggerState.logger != nil {
 				loggerState.logger.Warn("Failed to close previous log file during reinitialization",
-					zap.Error(err),
+					slog.String("error", err.Error()),
 				)
 			}
 		}
 		loggerState.file = nil
 	}
 
-	// Create JSON encoder config for production
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.TimeKey = "timestamp"
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	encoderConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
+	// Create handler options
+	opts := &slog.HandlerOptions{
+		Level:     cfg.LogLevel,
+		AddSource: true,
+	}
 
-	// Create stdout core (always enabled)
-	stdoutCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(os.Stdout),
-		cfg.LogLevel,
-	)
+	var writers []io.Writer
+	writers = append(writers, os.Stdout)
 
-	// Try to create file core if log file path is specified
-	var cores []zapcore.Core
-	cores = append(cores, stdoutCore)
-
+	// Try to create file writer if log file path is specified
 	if cfg.LogFilePath != "" {
-		fileCore, file, err := createFileCore(cfg.LogFilePath, encoderConfig, cfg.LogLevel)
+		file, err := createLogFile(cfg.LogFilePath)
 		if err != nil {
 			// Log warning to stdout and continue without file logging
-			tempLogger := zap.New(stdoutCore)
+			tempLogger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 			tempLogger.Warn("Failed to initialize file logging, continuing with stdout only",
-				zap.String("log_file", cfg.LogFilePath),
-				zap.Error(err),
+				slog.String("log_file", cfg.LogFilePath),
+				slog.String("error", err.Error()),
 			)
 			result.FileLoggingError = err
 		} else {
-			cores = append(cores, fileCore)
+			writers = append(writers, file)
 			loggerState.file = file
 			result.FileLoggingEnabled = true
 		}
 	}
 
-	// Combine cores using a tee
-	core := zapcore.NewTee(cores...)
+	// Create multi-writer for all destinations
+	multiWriter := io.MultiWriter(writers...)
 
-	// Create logger with caller information
-	loggerState.logger = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+	// Create JSON handler with multi-writer
+	handler := slog.NewJSONHandler(multiWriter, opts)
+
+	// Create logger
+	loggerState.logger = slog.New(handler)
 	Logger = loggerState.logger
 
 	return result, nil
@@ -123,28 +117,21 @@ func validateLogFilePath(path string) (string, error) {
 	return absPath, nil
 }
 
-// createFileCore creates a file-based logging core
-func createFileCore(logFilePath string, encoderConfig zapcore.EncoderConfig, level zapcore.Level) (zapcore.Core, *os.File, error) {
+// createLogFile creates or opens a log file with proper permissions
+func createLogFile(logFilePath string) (*os.File, error) {
 	// Validate and sanitize the file path
 	cleanPath, err := validateLogFilePath(logFilePath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid log file path: %w", err)
+		return nil, fmt.Errorf("invalid log file path: %w", err)
 	}
 
 	// Try to open/create the log file with restricted permissions (owner-only read/write)
 	file, err := os.OpenFile(cleanPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to open log file: %w", err)
+		return nil, fmt.Errorf("failed to open log file: %w", err)
 	}
 
-	// Create file core
-	fileCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(file),
-		level,
-	)
-
-	return fileCore, file, nil
+	return file, nil
 }
 
 // Sync flushes any buffered log entries
@@ -152,24 +139,15 @@ func Sync() error {
 	loggerState.mu.Lock()
 	defer loggerState.mu.Unlock()
 
-	if loggerState.logger != nil {
-		// Sync can fail on stdout/stderr with "bad file descriptor" in tests
-		// This is a known issue with zap - ignore these specific errors
-		if err := loggerState.logger.Sync(); err != nil {
-			// Ignore stdout/stderr sync errors
-			if strings.Contains(err.Error(), "/dev/stdout") ||
-				strings.Contains(err.Error(), "/dev/stderr") ||
-				strings.Contains(err.Error(), "invalid argument") {
-				return nil
-			}
-			return err
-		}
+	// slog doesn't have a Sync method, but we can sync the file if it exists
+	if loggerState.file != nil {
+		return loggerState.file.Sync()
 	}
 	return nil
 }
 
 // GetLogger returns the global logger instance in a thread-safe manner
-func GetLogger() *zap.Logger {
+func GetLogger() *slog.Logger {
 	loggerState.mu.Lock()
 	defer loggerState.mu.Unlock()
 	return loggerState.logger
@@ -177,19 +155,33 @@ func GetLogger() *zap.Logger {
 
 // WithRequestID returns a logger with the request ID field added
 // This is useful for tracing requests across log entries
-func WithRequestID(requestID string) *zap.Logger {
+func WithRequestID(requestID string) *slog.Logger {
 	loggerState.mu.Lock()
 	defer loggerState.mu.Unlock()
 
 	if loggerState.logger == nil {
-		return zap.NewNop()
+		return slog.New(slog.NewJSONHandler(io.Discard, nil))
 	}
-	return loggerState.logger.With(zap.String("request_id", requestID))
+	return loggerState.logger.With(slog.String("request_id", requestID))
 }
 
-// ParseLevel converts a string log level to zapcore.Level
-func ParseLevel(level string) (zapcore.Level, error) {
-	var l zapcore.Level
-	err := l.UnmarshalText([]byte(level))
-	return l, err
+// ParseLevel converts a string log level to slog.Level
+func ParseLevel(level string) (slog.Level, error) {
+	switch level {
+	case "debug", "DEBUG":
+		return slog.LevelDebug, nil
+	case "info", "INFO":
+		return slog.LevelInfo, nil
+	case "warn", "WARN", "warning", "WARNING":
+		return slog.LevelWarn, nil
+	case "error", "ERROR":
+		return slog.LevelError, nil
+	default:
+		return slog.LevelInfo, fmt.Errorf("unknown log level: %s", level)
+	}
+}
+
+// NopLogger returns a no-op logger that discards all output
+func NopLogger() *slog.Logger {
+	return slog.New(slog.NewJSONHandler(io.Discard, nil))
 }

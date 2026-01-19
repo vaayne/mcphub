@@ -4,27 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"time"
 
 	"github.com/vaayne/mcpx/internal/logging"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // StdioClientOpts contains options for creating a StdioClient
 type StdioClientOpts struct {
 	Command []string // Command and arguments to spawn
 	Timeout int      // seconds
-	Logger  *zap.Logger
+	Logger  *slog.Logger
 }
 
 // StdioClient connects to an MCP server via stdio (spawning a subprocess)
 type StdioClient struct {
 	session *mcp.ClientSession
-	logger  *zap.Logger
+	logger  *slog.Logger
 }
 
 // NewStdioClient creates a new StdioClient and connects to the spawned MCP server
@@ -42,7 +41,7 @@ func NewStdioClient(ctx context.Context, opts StdioClientOpts) (*StdioClient, er
 	// Use a no-op logger if none provided
 	logger := opts.Logger
 	if logger == nil {
-		logger = zap.NewNop()
+		logger = logging.NopLogger()
 	}
 
 	// Create the command
@@ -54,8 +53,8 @@ func NewStdioClient(ctx context.Context, opts StdioClientOpts) (*StdioClient, er
 	}
 
 	logger.Debug("Created stdio transport",
-		zap.String("command", opts.Command[0]),
-		zap.Strings("args", opts.Command[1:]))
+		slog.String("command", opts.Command[0]),
+		slog.Any("args", opts.Command[1:]))
 
 	// Create MCP client
 	client := mcp.NewClient(&mcp.Implementation{
@@ -79,7 +78,7 @@ func NewStdioClient(ctx context.Context, opts StdioClientOpts) (*StdioClient, er
 	}
 
 	logger.Debug("Connected to stdio MCP server",
-		zap.String("command", opts.Command[0]))
+		slog.String("command", opts.Command[0]))
 
 	return &StdioClient{
 		session: session,
@@ -148,9 +147,9 @@ func (c *StdioClient) Close() error {
 // createStdioClient creates a StdioClient from command flags and args
 func createStdioClient(ctx context.Context, command []string, timeout int, verbose bool, logFile string) (*StdioClient, error) {
 	// Initialize logging
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	logConfig := logging.Config{

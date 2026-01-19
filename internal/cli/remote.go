@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -13,7 +14,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"go.uber.org/zap"
+	"github.com/vaayne/mcpx/internal/logging"
 )
 
 // RemoteClientOpts contains options for creating a RemoteClient
@@ -22,13 +23,13 @@ type RemoteClientOpts struct {
 	Transport string // "http" or "sse"
 	Headers   map[string]string
 	Timeout   int // seconds
-	Logger    *zap.Logger
+	Logger    *slog.Logger
 }
 
 // RemoteClient connects to remote MCP services
 type RemoteClient struct {
 	session *mcp.ClientSession
-	logger  *zap.Logger
+	logger  *slog.Logger
 }
 
 // NewRemoteClient creates a new RemoteClient and connects to the remote MCP service
@@ -62,7 +63,7 @@ func NewRemoteClient(ctx context.Context, opts RemoteClientOpts) (*RemoteClient,
 	// Use a no-op logger if none provided
 	logger := opts.Logger
 	if logger == nil {
-		logger = zap.NewNop()
+		logger = logging.NopLogger()
 	}
 
 	// Create HTTP client with custom configuration
@@ -87,8 +88,8 @@ func NewRemoteClient(ctx context.Context, opts RemoteClientOpts) (*RemoteClient,
 	}
 
 	logger.Debug("Created MCP transport",
-		zap.String("type", transport),
-		zap.String("url", opts.ServerURL))
+		slog.String("type", transport),
+		slog.String("url", opts.ServerURL))
 
 	// Create MCP client
 	client := mcp.NewClient(&mcp.Implementation{
@@ -116,7 +117,7 @@ func NewRemoteClient(ctx context.Context, opts RemoteClientOpts) (*RemoteClient,
 		return nil, fmt.Errorf("server at %s did not complete MCP handshake", opts.ServerURL)
 	}
 
-	logger.Debug("Connected to remote MCP server", zap.String("url", opts.ServerURL))
+	logger.Debug("Connected to remote MCP server", slog.String("url", opts.ServerURL))
 
 	return &RemoteClient{
 		session: session,

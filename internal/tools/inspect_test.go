@@ -7,16 +7,16 @@ import (
 	"testing"
 
 	"github.com/vaayne/mcpx/internal/client"
+	"github.com/vaayne/mcpx/internal/logging"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 // TestHandleInspectTool_EmptyName tests error when name is empty
 func TestHandleInspectTool_EmptyName(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -38,7 +38,7 @@ func TestHandleInspectTool_EmptyName(t *testing.T) {
 
 // TestHandleInspectTool_NoNamespace tests error when name lacks namespace
 func TestHandleInspectTool_NoNamespace(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -62,7 +62,7 @@ func TestHandleInspectTool_NoNamespace(t *testing.T) {
 
 // TestHandleInspectTool_ToolNotFound tests error when tool doesn't exist
 func TestHandleInspectTool_ToolNotFound(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -86,7 +86,7 @@ func TestHandleInspectTool_ToolNotFound(t *testing.T) {
 
 // TestHandleInspectTool_NameTooLong tests error when name exceeds max length
 func TestHandleInspectTool_NameTooLong(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -112,7 +112,7 @@ func TestHandleInspectTool_NameTooLong(t *testing.T) {
 
 // TestHandleInspectTool_InvalidJSON tests error when arguments are invalid JSON
 func TestHandleInspectTool_InvalidJSON(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -130,7 +130,7 @@ func TestHandleInspectTool_InvalidJSON(t *testing.T) {
 
 // TestHandleInspectTool_ContextCancellation tests context cancellation handling
 func TestHandleInspectTool_ContextCancellation(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 

@@ -3,12 +3,12 @@ package client
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"maps"
 	"sync"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"go.uber.org/zap"
 	"github.com/vaayne/mcpx/internal/config"
 	"github.com/vaayne/mcpx/internal/transport"
 )
@@ -27,7 +27,7 @@ type clientInfo struct {
 
 // Manager manages connections to remote MCP servers
 type Manager struct {
-	logger           *zap.Logger
+	logger           *slog.Logger
 	clients          map[string]*clientInfo // serverID -> client info
 	mu               sync.RWMutex
 	ctx              context.Context
@@ -44,7 +44,7 @@ const (
 )
 
 // NewManager creates a new client manager
-func NewManager(logger *zap.Logger) *Manager {
+func NewManager(logger *slog.Logger) *Manager {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Manager{
 		logger:           logger,
@@ -57,7 +57,7 @@ func NewManager(logger *zap.Logger) *Manager {
 }
 
 // NewManagerWithFactory creates a new manager instance with a custom transport factory
-func NewManagerWithFactory(logger *zap.Logger, factory transport.Factory) *Manager {
+func NewManagerWithFactory(logger *slog.Logger, factory transport.Factory) *Manager {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Manager{
 		logger:           logger,
@@ -72,8 +72,8 @@ func NewManagerWithFactory(logger *zap.Logger, factory transport.Factory) *Manag
 // ConnectToServer connects to a remote MCP server
 func (m *Manager) ConnectToServer(serverID string, serverCfg config.MCPServer) error {
 	m.logger.Info("Connecting to remote MCP server",
-		zap.String("serverID", serverID),
-		zap.String("transport", serverCfg.GetTransport()))
+		slog.String("serverID", serverID),
+		slog.String("transport", serverCfg.GetTransport()))
 
 	// Check if already connected
 	m.mu.RLock()
@@ -83,7 +83,7 @@ func (m *Manager) ConnectToServer(serverID string, serverCfg config.MCPServer) e
 		isConnected := existing.session != nil
 		existing.mu.RUnlock()
 		if isConnected {
-			m.logger.Info("Already connected to server", zap.String("serverID", serverID))
+			m.logger.Info("Already connected to server", slog.String("serverID", serverID))
 			return nil
 		}
 	} else {
@@ -163,8 +163,8 @@ func (m *Manager) connectClient(ctx context.Context, info *clientInfo, serverCfg
 		case <-closeCtx.Done():
 			// Timeout - log and continue
 			m.logger.Warn("Timeout closing session after ListTools error",
-				zap.String("serverID", info.serverID),
-				zap.Error(err))
+				slog.String("serverID", info.serverID),
+				slog.String("error", err.Error()))
 		}
 
 		return fmt.Errorf("failed to list tools: %w", err)
@@ -182,8 +182,8 @@ func (m *Manager) connectClient(ctx context.Context, info *clientInfo, serverCfg
 	info.mu.Unlock()
 
 	m.logger.Info("Connected to server",
-		zap.String("serverID", info.serverID),
-		zap.Int("toolCount", len(toolsResult.Tools)),
+		slog.String("serverID", info.serverID),
+		slog.Int("toolCount", len(toolsResult.Tools)),
 	)
 
 	return nil
@@ -210,8 +210,8 @@ func (m *Manager) maintainConnection(ctx context.Context, serverID string, serve
 			info.mu.Lock()
 			if err != nil && ctx.Err() == nil {
 				m.logger.Warn("Server connection lost",
-					zap.String("serverID", serverID),
-					zap.Error(err),
+					slog.String("serverID", serverID),
+					slog.String("error", err.Error()),
 				)
 				info.reconnecting = true
 			}
@@ -234,8 +234,8 @@ func (m *Manager) maintainConnection(ctx context.Context, serverID string, serve
 		info.mu.Unlock()
 
 		m.logger.Info("Attempting to reconnect",
-			zap.String("serverID", serverID),
-			zap.Duration("backoff", backoff),
+			slog.String("serverID", serverID),
+			slog.Duration("backoff", backoff),
 		)
 
 		// Wait before reconnecting
@@ -248,8 +248,8 @@ func (m *Manager) maintainConnection(ctx context.Context, serverID string, serve
 		// Attempt reconnection
 		if err := m.connectClient(ctx, info, serverCfg); err != nil {
 			m.logger.Error("Failed to reconnect",
-				zap.String("serverID", serverID),
-				zap.Error(err),
+				slog.String("serverID", serverID),
+				slog.String("error", err.Error()),
 			)
 
 			// Increase backoff

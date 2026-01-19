@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/vaayne/mcpx/internal/tools"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"go.uber.org/zap"
 )
 
 // TransportConfig holds transport configuration for the server
@@ -24,7 +24,7 @@ type TransportConfig struct {
 // Server represents the MCP hub server
 type Server struct {
 	config          *config.Config
-	logger          *zap.Logger
+	logger          *slog.Logger
 	mcpServer       *mcp.Server
 	clientManager   *client.Manager
 	builtinRegistry *tools.BuiltinToolRegistry
@@ -33,7 +33,7 @@ type Server struct {
 }
 
 // NewServer creates a new MCP hub server
-func NewServer(cfg *config.Config, logger *zap.Logger) *Server {
+func NewServer(cfg *config.Config, logger *slog.Logger) *Server {
 	return &Server{
 		config:          cfg,
 		logger:          logger,
@@ -44,7 +44,7 @@ func NewServer(cfg *config.Config, logger *zap.Logger) *Server {
 // Start starts the MCP server with the specified transport
 func (s *Server) Start(ctx context.Context, transportCfg TransportConfig) error {
 	s.logger.Info("Starting MCP hub server",
-		zap.String("transport", transportCfg.Type),
+		slog.String("transport", transportCfg.Type),
 	)
 
 	// Initialize client manager
@@ -98,7 +98,7 @@ func (s *Server) startStdio(ctx context.Context) error {
 // startHTTP starts the server with StreamableHTTP transport
 func (s *Server) startHTTP(ctx context.Context, cfg TransportConfig) error {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	s.logger.Info("Starting HTTP transport", zap.String("address", addr))
+	s.logger.Info("Starting HTTP transport", slog.String("address", addr))
 
 	handler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		return s.mcpServer
@@ -112,7 +112,7 @@ func (s *Server) startHTTP(ctx context.Context, cfg TransportConfig) error {
 		Handler: mux,
 	}
 
-	s.logger.Info("MCP Hub server running", zap.String("url", fmt.Sprintf("http://%s/mcp", addr)))
+	s.logger.Info("MCP Hub server running", slog.String("url", fmt.Sprintf("http://%s/mcp", addr)))
 
 	if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("HTTP server failed: %w", err)
@@ -123,7 +123,7 @@ func (s *Server) startHTTP(ctx context.Context, cfg TransportConfig) error {
 // startSSE starts the server with SSE transport
 func (s *Server) startSSE(ctx context.Context, cfg TransportConfig) error {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	s.logger.Info("Starting SSE transport", zap.String("address", addr))
+	s.logger.Info("Starting SSE transport", slog.String("address", addr))
 
 	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
 		return s.mcpServer
@@ -137,7 +137,7 @@ func (s *Server) startSSE(ctx context.Context, cfg TransportConfig) error {
 		Handler: mux,
 	}
 
-	s.logger.Info("MCP Hub server running", zap.String("url", fmt.Sprintf("http://%s/sse", addr)))
+	s.logger.Info("MCP Hub server running", slog.String("url", fmt.Sprintf("http://%s/sse", addr)))
 
 	if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("SSE server failed: %w", err)
@@ -154,14 +154,14 @@ func (s *Server) Stop() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := s.httpServer.Shutdown(ctx); err != nil {
-			s.logger.Error("Error shutting down HTTP server", zap.Error(err))
+			s.logger.Error("Error shutting down HTTP server", slog.String("error", err.Error()))
 		}
 	}
 
 	// Disconnect from all remote servers
 	if s.clientManager != nil {
 		if err := s.clientManager.DisconnectAll(); err != nil {
-			s.logger.Error("Error disconnecting from remote servers", zap.Error(err))
+			s.logger.Error("Error disconnecting from remote servers", slog.String("error", err.Error()))
 			return err
 		}
 	}
@@ -257,15 +257,15 @@ func (s *Server) connectToRemoteServers() error {
 	for serverID, serverCfg := range s.config.MCPServers {
 		// Skip disabled servers
 		if !serverCfg.IsEnabled() {
-			s.logger.Info("Skipping disabled server", zap.String("serverID", serverID))
+			s.logger.Info("Skipping disabled server", slog.String("serverID", serverID))
 			continue
 		}
 
-		s.logger.Info("Connecting to server", zap.String("serverID", serverID))
+		s.logger.Info("Connecting to server", slog.String("serverID", serverID))
 		if err := s.clientManager.ConnectToServer(serverID, serverCfg); err != nil {
 			s.logger.Error("Failed to connect to server",
-				zap.String("serverID", serverID),
-				zap.Error(err),
+				slog.String("serverID", serverID),
+				slog.String("error", err.Error()),
 			)
 
 			// If server is required, return error immediately
@@ -278,7 +278,7 @@ func (s *Server) connectToRemoteServers() error {
 	}
 
 	if len(errors) > 0 {
-		s.logger.Warn("Some optional servers failed to connect", zap.Int("count", len(errors)))
+		s.logger.Warn("Some optional servers failed to connect", slog.Int("count", len(errors)))
 	}
 
 	return nil
@@ -294,7 +294,7 @@ func (s *Server) registerAllTools() error {
 	}
 
 	s.logger.Info("Registered built-in tools",
-		zap.Int("count", len(s.builtinRegistry.GetAllTools())),
+		slog.Int("count", len(s.builtinRegistry.GetAllTools())),
 	)
 
 	return nil
@@ -322,13 +322,13 @@ func (s *Server) registerBuiltinToolHandler(toolName string, builtinTool config.
 	// Use Server.AddTool to register the tool
 	s.mcpServer.AddTool(mcpTool, handler)
 
-	s.logger.Debug("Registered built-in tool", zap.String("name", toolName))
+	s.logger.Debug("Registered built-in tool", slog.String("name", toolName))
 	return nil
 }
 
 // handleBuiltinTool handles calls to built-in tools
 func (s *Server) handleBuiltinTool(ctx context.Context, toolName string, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	s.logger.Debug("Handling built-in tool call", zap.String("tool", toolName))
+	s.logger.Debug("Handling built-in tool call", slog.String("tool", toolName))
 
 	// Apply timeout to prevent DoS attacks
 	callCtx, cancel := context.WithTimeout(ctx, s.toolCallTimeout)

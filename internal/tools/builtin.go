@@ -1,23 +1,22 @@
 package tools
 
 import (
+	"log/slog"
 	"maps"
 	"sync"
 
 	"github.com/vaayne/mcpx/internal/config"
-
-	"go.uber.org/zap"
 )
 
 // BuiltinToolRegistry manages built-in tools
 type BuiltinToolRegistry struct {
-	logger *zap.Logger
+	logger *slog.Logger
 	tools  map[string]config.BuiltinTool
 	mu     sync.RWMutex
 }
 
 // NewBuiltinToolRegistry creates a new registry
-func NewBuiltinToolRegistry(logger *zap.Logger) *BuiltinToolRegistry {
+func NewBuiltinToolRegistry(logger *slog.Logger) *BuiltinToolRegistry {
 	return &BuiltinToolRegistry{
 		logger: logger,
 		tools:  make(map[string]config.BuiltinTool),
@@ -28,7 +27,7 @@ func NewBuiltinToolRegistry(logger *zap.Logger) *BuiltinToolRegistry {
 func (r *BuiltinToolRegistry) RegisterTool(tool config.BuiltinTool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.logger.Info("Registering built-in tool", zap.String("name", tool.Name))
+	r.logger.Info("Registering built-in tool", slog.String("name", tool.Name))
 	r.tools[tool.Name] = tool
 }
 

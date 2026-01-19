@@ -8,15 +8,15 @@ import (
 	"time"
 
 	"github.com/vaayne/mcpx/internal/config"
+	"github.com/vaayne/mcpx/internal/logging"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap/zaptest"
 )
 
 // TestNewManager verifies Manager initialization
 func TestNewManager(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 
 	assert.NotNil(t, manager)
@@ -30,7 +30,7 @@ func TestNewManager(t *testing.T) {
 
 // TestConnectToServer_UnsupportedTransport verifies connection fails with unsupported transport
 func TestConnectToServer_UnsupportedTransport(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -61,7 +61,7 @@ func TestConnectToServer_UnsupportedTransport(t *testing.T) {
 
 // TestConnectToServer_InvalidCommand verifies connection fails with invalid command
 func TestConnectToServer_InvalidCommand(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -78,7 +78,7 @@ func TestConnectToServer_InvalidCommand(t *testing.T) {
 
 // TestConnectToServer_AlreadyConnected verifies idempotent connection
 func TestConnectToServer_AlreadyConnected(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -105,7 +105,7 @@ func TestConnectToServer_AlreadyConnected(t *testing.T) {
 
 // TestDisconnectAll verifies all clients are disconnected
 func TestDisconnectAll(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 
 	// Add multiple mock clients
@@ -146,7 +146,7 @@ func TestDisconnectAll(t *testing.T) {
 
 // TestGetClient_NotFound verifies error when server not found
 func TestGetClient_NotFound(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -157,7 +157,7 @@ func TestGetClient_NotFound(t *testing.T) {
 
 // TestGetClient_NotConnected verifies error when server exists but not connected
 func TestGetClient_NotConnected(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -185,7 +185,7 @@ func TestGetClient_NotConnected(t *testing.T) {
 
 // TestListClients verifies listing all client IDs
 func TestListClients(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -225,7 +225,7 @@ func TestListClients(t *testing.T) {
 
 // TestGetTools verifies retrieving tools from a server
 func TestGetTools(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -271,7 +271,7 @@ func TestGetTools(t *testing.T) {
 
 // TestGetTools_ServerNotFound verifies error when server not found
 func TestGetTools_ServerNotFound(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -282,7 +282,7 @@ func TestGetTools_ServerNotFound(t *testing.T) {
 
 // TestGetAllTools verifies getting all tools with namespacing
 func TestGetAllTools(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -332,7 +332,7 @@ func TestGetAllTools(t *testing.T) {
 
 // TestDetectNameCollisions verifies collision detection
 func TestDetectNameCollisions(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -392,7 +392,7 @@ func TestDetectNameCollisions(t *testing.T) {
 
 // TestDetectNameCollisions_NoCollisions verifies no false positives
 func TestDetectNameCollisions_NoCollisions(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -433,7 +433,7 @@ func TestDetectNameCollisions_NoCollisions(t *testing.T) {
 
 // TestBackoffCalculation verifies exponential backoff
 func TestBackoffCalculation(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -479,7 +479,7 @@ func TestBackoffCalculation(t *testing.T) {
 
 // TestThreadSafety verifies concurrent access to manager
 func TestThreadSafety(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -524,7 +524,7 @@ func TestThreadSafety(t *testing.T) {
 
 // TestManagerContextCancellation verifies cleanup on context cancellation
 func TestManagerContextCancellation(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := NewManager(logger)
 
 	// Verify context is initially valid

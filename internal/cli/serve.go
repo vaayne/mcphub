@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,8 +13,6 @@ import (
 	"github.com/vaayne/mcpx/internal/server"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // ServeCmd is the serve subcommand that starts the MCP hub server
@@ -95,9 +94,9 @@ func runServeWithCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Determine log level based on verbose flag
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	// Initialize logging
@@ -119,29 +118,29 @@ func runServeWithCmd(cmd *cobra.Command, args []string) error {
 
 	// Log initialization status
 	if result.FileLoggingEnabled {
-		logger.Info("File logging enabled", zap.String("log_file", logFile))
+		logger.Info("File logging enabled", slog.String("log_file", logFile))
 	} else if result.FileLoggingError != nil {
 		logger.Warn("File logging disabled due to error",
-			zap.String("log_file", logFile),
-			zap.Error(result.FileLoggingError),
+			slog.String("log_file", logFile),
+			slog.String("error", result.FileLoggingError.Error()),
 		)
 	}
 
 	// Validate config file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		logger.Error("Configuration file does not exist", zap.String("path", configPath))
+		logger.Error("Configuration file does not exist", slog.String("path", configPath))
 		return fmt.Errorf("config file not found: %s", configPath)
 	}
 
 	logger.Info("Starting MCP Hub",
-		zap.String("config", configPath),
-		zap.String("transport", transport),
+		slog.String("config", configPath),
+		slog.String("transport", transport),
 	)
 
 	// Load configuration
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
-		logger.Error("Failed to load configuration", zap.Error(err))
+		logger.Error("Failed to load configuration", slog.String("error", err.Error()))
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
@@ -177,13 +176,13 @@ func runServeWithCmd(cmd *cobra.Command, args []string) error {
 		logger.Info("Received shutdown signal")
 		cancel()
 	case err := <-errChan:
-		logger.Error("Server error", zap.Error(err))
+		logger.Error("Server error", slog.String("error", err.Error()))
 		return err
 	}
 
 	// Graceful shutdown
 	if err := srv.Stop(); err != nil {
-		logger.Error("Error during shutdown", zap.Error(err))
+		logger.Error("Error during shutdown", slog.String("error", err.Error()))
 		return err
 	}
 

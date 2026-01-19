@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"github.com/vaayne/mcpx/internal/logging"
 )
 
 func TestNewConfigClient_RequiresConfigPath(t *testing.T) {
-	client, err := NewConfigClient(context.Background(), "", zap.NewNop(), time.Second)
+	client, err := NewConfigClient(context.Background(), "", logging.NopLogger(), time.Second)
 	assert.Nil(t, client)
 	assert.Error(t, err)
 }
@@ -25,7 +25,7 @@ func TestNewConfigClient_InvalidConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, file.Close())
 
-	client, err := NewConfigClient(context.Background(), file.Name(), zap.NewNop(), time.Second)
+	client, err := NewConfigClient(context.Background(), file.Name(), logging.NopLogger(), time.Second)
 	assert.Nil(t, client)
 	assert.Error(t, err)
 }

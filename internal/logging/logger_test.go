@@ -2,20 +2,19 @@ package logging
 
 import (
 	"encoding/json"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func TestInitLogger_StdoutOnly(t *testing.T) {
 	// Test logger initialization with stdout only (no file logging)
 	cfg := Config{
-		LogLevel:    zapcore.InfoLevel,
+		LogLevel:    slog.LevelInfo,
 		LogFilePath: "", // No file logging
 	}
 
@@ -27,7 +26,7 @@ func TestInitLogger_StdoutOnly(t *testing.T) {
 	assert.NotNil(t, Logger)
 
 	// Verify logger can log without errors
-	Logger.Info("test message", zap.String("key", "value"))
+	Logger.Info("test message", slog.String("key", "value"))
 	err = Sync()
 	assert.NoError(t, err)
 }
@@ -38,7 +37,7 @@ func TestInitLogger_WithFileLogging(t *testing.T) {
 	logFile := filepath.Join(tmpDir, "test.log")
 
 	cfg := Config{
-		LogLevel:    zapcore.InfoLevel,
+		LogLevel:    slog.LevelInfo,
 		LogFilePath: logFile,
 	}
 
@@ -50,7 +49,7 @@ func TestInitLogger_WithFileLogging(t *testing.T) {
 	assert.NotNil(t, Logger)
 
 	// Write a log message
-	Logger.Info("test message", zap.String("key", "value"))
+	Logger.Info("test message", slog.String("key", "value"))
 	err = Sync()
 	assert.NoError(t, err)
 
@@ -66,7 +65,7 @@ func TestInitLogger_WithFileLogging(t *testing.T) {
 	var logEntry map[string]any
 	err = json.Unmarshal(content, &logEntry)
 	assert.NoError(t, err, "log output should be valid JSON")
-	assert.Equal(t, "info", logEntry["level"])
+	assert.Equal(t, "INFO", logEntry["level"])
 	assert.Equal(t, "test message", logEntry["msg"])
 
 	// Verify file permissions are 0600 (owner-only read/write)
@@ -78,7 +77,7 @@ func TestInitLogger_WithFileLogging(t *testing.T) {
 func TestInitLogger_UnwritableFile_GracefulFallback(t *testing.T) {
 	// Try to create a log file in a non-existent directory
 	cfg := Config{
-		LogLevel:    zapcore.InfoLevel,
+		LogLevel:    slog.LevelInfo,
 		LogFilePath: "/nonexistent/directory/test.log",
 	}
 
@@ -99,7 +98,7 @@ func TestInitLogger_UnwritableFile_GracefulFallback(t *testing.T) {
 func TestInitLogger_LogLevels(t *testing.T) {
 	tests := []struct {
 		name     string
-		level    zapcore.Level
+		level    slog.Level
 		logDebug bool
 		logInfo  bool
 		logWarn  bool
@@ -107,7 +106,7 @@ func TestInitLogger_LogLevels(t *testing.T) {
 	}{
 		{
 			name:     "debug level - logs everything",
-			level:    zapcore.DebugLevel,
+			level:    slog.LevelDebug,
 			logDebug: true,
 			logInfo:  true,
 			logWarn:  true,
@@ -115,7 +114,7 @@ func TestInitLogger_LogLevels(t *testing.T) {
 		},
 		{
 			name:     "info level - logs info and above",
-			level:    zapcore.InfoLevel,
+			level:    slog.LevelInfo,
 			logDebug: false,
 			logInfo:  true,
 			logWarn:  true,
@@ -123,7 +122,7 @@ func TestInitLogger_LogLevels(t *testing.T) {
 		},
 		{
 			name:     "warn level - logs warn and above",
-			level:    zapcore.WarnLevel,
+			level:    slog.LevelWarn,
 			logDebug: false,
 			logInfo:  false,
 			logWarn:  true,
@@ -131,7 +130,7 @@ func TestInitLogger_LogLevels(t *testing.T) {
 		},
 		{
 			name:     "error level - logs only errors",
-			level:    zapcore.ErrorLevel,
+			level:    slog.LevelError,
 			logDebug: false,
 			logInfo:  false,
 			logWarn:  false,
@@ -196,7 +195,7 @@ func TestInitLogger_JSONFormat(t *testing.T) {
 	logFile := filepath.Join(tmpDir, "test.log")
 
 	cfg := Config{
-		LogLevel:    zapcore.InfoLevel,
+		LogLevel:    slog.LevelInfo,
 		LogFilePath: logFile,
 	}
 
@@ -206,9 +205,9 @@ func TestInitLogger_JSONFormat(t *testing.T) {
 
 	// Log a structured message
 	Logger.Info("structured log",
-		zap.String("string_field", "value"),
-		zap.Int("int_field", 42),
-		zap.Bool("bool_field", true),
+		slog.String("string_field", "value"),
+		slog.Int("int_field", 42),
+		slog.Bool("bool_field", true),
 	)
 	err = Sync()
 	assert.NoError(t, err)
@@ -223,13 +222,13 @@ func TestInitLogger_JSONFormat(t *testing.T) {
 	assert.NoError(t, err, "log output should be valid JSON")
 
 	// Verify JSON structure
-	assert.Equal(t, "info", logEntry["level"])
+	assert.Equal(t, "INFO", logEntry["level"])
 	assert.Equal(t, "structured log", logEntry["msg"])
 	assert.Equal(t, "value", logEntry["string_field"])
 	assert.Equal(t, float64(42), logEntry["int_field"]) // JSON numbers are float64
 	assert.Equal(t, true, logEntry["bool_field"])
-	assert.NotEmpty(t, logEntry["timestamp"])
-	assert.NotEmpty(t, logEntry["caller"])
+	assert.NotEmpty(t, logEntry["time"])
+	assert.NotEmpty(t, logEntry["source"])
 }
 
 func TestInitLogger_AppendToExistingFile(t *testing.T) {
@@ -238,7 +237,7 @@ func TestInitLogger_AppendToExistingFile(t *testing.T) {
 
 	// Create initial log entry
 	cfg := Config{
-		LogLevel:    zapcore.InfoLevel,
+		LogLevel:    slog.LevelInfo,
 		LogFilePath: logFile,
 	}
 
@@ -272,6 +271,7 @@ func TestSync(t *testing.T) {
 	// Test Sync with nil logger
 	Logger = nil
 	loggerState.logger = nil
+	loggerState.file = nil
 	err := Sync()
 	assert.NoError(t, err) // Should not panic and return nil error
 
@@ -280,7 +280,7 @@ func TestSync(t *testing.T) {
 	logFile := filepath.Join(tmpDir, "test.log")
 
 	cfg := Config{
-		LogLevel:    zapcore.InfoLevel,
+		LogLevel:    slog.LevelInfo,
 		LogFilePath: logFile,
 	}
 
@@ -303,7 +303,7 @@ func TestWithRequestID(t *testing.T) {
 	logFile := filepath.Join(tmpDir, "test.log")
 
 	cfg := Config{
-		LogLevel:    zapcore.InfoLevel,
+		LogLevel:    slog.LevelInfo,
 		LogFilePath: logFile,
 	}
 
@@ -318,7 +318,7 @@ func TestWithRequestID(t *testing.T) {
 
 	// Log with request ID
 	reqLogger.Info("handling request")
-	reqLogger.Sync()
+	Sync()
 
 	// Verify request_id is in the log
 	content, err := os.ReadFile(logFile)
@@ -335,50 +335,50 @@ func TestWithRequestID_NilLogger(t *testing.T) {
 	Logger = nil
 	loggerState.logger = nil
 	reqLogger := WithRequestID("test-id")
-	assert.NotNil(t, reqLogger) // Should return zap.NewNop() instead of nil
+	assert.NotNil(t, reqLogger) // Should return NopLogger instead of nil
 }
 
 func TestParseLevel(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     string
-		expected  zapcore.Level
+		expected  slog.Level
 		expectErr bool
 	}{
 		{
 			name:      "debug level",
 			input:     "debug",
-			expected:  zapcore.DebugLevel,
+			expected:  slog.LevelDebug,
 			expectErr: false,
 		},
 		{
 			name:      "info level",
 			input:     "info",
-			expected:  zapcore.InfoLevel,
+			expected:  slog.LevelInfo,
 			expectErr: false,
 		},
 		{
 			name:      "warn level",
 			input:     "warn",
-			expected:  zapcore.WarnLevel,
+			expected:  slog.LevelWarn,
 			expectErr: false,
 		},
 		{
 			name:      "error level",
 			input:     "error",
-			expected:  zapcore.ErrorLevel,
+			expected:  slog.LevelError,
 			expectErr: false,
 		},
 		{
 			name:      "uppercase",
 			input:     "INFO",
-			expected:  zapcore.InfoLevel,
+			expected:  slog.LevelInfo,
 			expectErr: false,
 		},
 		{
 			name:      "invalid level",
 			input:     "invalid",
-			expected:  zapcore.InfoLevel,
+			expected:  slog.LevelInfo,
 			expectErr: true,
 		},
 	}
@@ -401,7 +401,7 @@ func TestInitLogger_CallerInformation(t *testing.T) {
 	logFile := filepath.Join(tmpDir, "test.log")
 
 	cfg := Config{
-		LogLevel:    zapcore.InfoLevel,
+		LogLevel:    slog.LevelInfo,
 		LogFilePath: logFile,
 	}
 
@@ -420,36 +420,11 @@ func TestInitLogger_CallerInformation(t *testing.T) {
 	var logEntry map[string]any
 	err = json.Unmarshal(content, &logEntry)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, logEntry["caller"])
-	assert.Contains(t, logEntry["caller"], "logger_test.go")
-}
-
-func TestInitLogger_Stacktrace(t *testing.T) {
-	tmpDir := t.TempDir()
-	logFile := filepath.Join(tmpDir, "test.log")
-
-	cfg := Config{
-		LogLevel:    zapcore.DebugLevel,
-		LogFilePath: logFile,
-	}
-
-	result, err := InitLogger(cfg)
-	assert.NoError(t, err)
-	assert.True(t, result.FileLoggingEnabled)
-
-	// Error level should include stacktrace
-	Logger.Error("error with stacktrace")
-	err = Sync()
-	assert.NoError(t, err)
-
-	// Verify stacktrace is present for error
-	content, err := os.ReadFile(logFile)
-	assert.NoError(t, err)
-
-	var logEntry map[string]any
-	err = json.Unmarshal(content, &logEntry)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, logEntry["stacktrace"])
+	assert.NotEmpty(t, logEntry["source"])
+	// slog stores source as an object with file, line, function
+	source, ok := logEntry["source"].(map[string]any)
+	assert.True(t, ok)
+	assert.Contains(t, source["file"], "logger_test.go")
 }
 
 func TestInitLogger_MultipleInits(t *testing.T) {
@@ -457,7 +432,7 @@ func TestInitLogger_MultipleInits(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	cfg1 := Config{
-		LogLevel:    zapcore.InfoLevel,
+		LogLevel:    slog.LevelInfo,
 		LogFilePath: filepath.Join(tmpDir, "log1.log"),
 	}
 
@@ -469,7 +444,7 @@ func TestInitLogger_MultipleInits(t *testing.T) {
 	assert.NoError(t, err)
 
 	cfg2 := Config{
-		LogLevel:    zapcore.DebugLevel,
+		LogLevel:    slog.LevelDebug,
 		LogFilePath: filepath.Join(tmpDir, "log2.log"),
 	}
 
@@ -514,7 +489,7 @@ func TestInitLogger_PathSecurity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := Config{
-				LogLevel:    zapcore.InfoLevel,
+				LogLevel:    slog.LevelInfo,
 				LogFilePath: tt.logFilePath,
 			}
 
@@ -531,7 +506,7 @@ func TestGetLogger(t *testing.T) {
 	logFile := filepath.Join(tmpDir, "test.log")
 
 	cfg := Config{
-		LogLevel:    zapcore.InfoLevel,
+		LogLevel:    slog.LevelInfo,
 		LogFilePath: logFile,
 	}
 
@@ -543,4 +518,12 @@ func TestGetLogger(t *testing.T) {
 	logger := GetLogger()
 	assert.NotNil(t, logger)
 	assert.Equal(t, Logger, logger)
+}
+
+func TestNopLogger(t *testing.T) {
+	logger := NopLogger()
+	assert.NotNil(t, logger)
+	// Should not panic when logging
+	logger.Info("test message")
+	logger.Error("error message")
 }

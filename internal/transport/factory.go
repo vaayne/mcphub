@@ -3,6 +3,7 @@ package transport
 import (
 	"crypto/tls"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"go.uber.org/zap"
 	"github.com/vaayne/mcpx/internal/config"
 )
 
@@ -22,12 +22,12 @@ type Factory interface {
 
 // DefaultFactory implements Factory with support for stdio, http, and sse
 type DefaultFactory struct {
-	logger     *zap.Logger
+	logger     *slog.Logger
 	httpClient *http.Client // Optional custom HTTP client
 }
 
 // NewDefaultFactory creates a new DefaultFactory
-func NewDefaultFactory(logger *zap.Logger) *DefaultFactory {
+func NewDefaultFactory(logger *slog.Logger) *DefaultFactory {
 	return &DefaultFactory{
 		logger: logger,
 	}
@@ -72,8 +72,8 @@ func (f *DefaultFactory) createStdioTransport(cfg config.MCPServer) (mcp.Transpo
 	}
 
 	f.logger.Debug("Created stdio transport",
-		zap.String("command", cfg.Command),
-		zap.Strings("args", cfg.Args))
+		slog.String("command", cfg.Command),
+		slog.Any("args", cfg.Args))
 
 	return transport, nil
 }
@@ -102,8 +102,8 @@ func (f *DefaultFactory) createHTTPTransport(cfg config.MCPServer) (mcp.Transpor
 	}
 
 	f.logger.Debug("Created HTTP transport",
-		zap.String("url", cfg.URL),
-		zap.Bool("tlsSkipVerify", cfg.TLSSkipVerify != nil && *cfg.TLSSkipVerify))
+		slog.String("url", cfg.URL),
+		slog.Bool("tlsSkipVerify", cfg.TLSSkipVerify != nil && *cfg.TLSSkipVerify))
 
 	return transport, nil
 }
@@ -131,8 +131,8 @@ func (f *DefaultFactory) createSSETransport(cfg config.MCPServer) (mcp.Transport
 	}
 
 	f.logger.Debug("Created SSE transport",
-		zap.String("url", cfg.URL),
-		zap.Bool("tlsSkipVerify", cfg.TLSSkipVerify != nil && *cfg.TLSSkipVerify))
+		slog.String("url", cfg.URL),
+		slog.Bool("tlsSkipVerify", cfg.TLSSkipVerify != nil && *cfg.TLSSkipVerify))
 
 	return transport, nil
 }
@@ -158,7 +158,7 @@ func (f *DefaultFactory) getHTTPClient(cfg config.MCPServer) *http.Client {
 	// Handle TLS verification skip (with warning)
 	if cfg.TLSSkipVerify != nil && *cfg.TLSSkipVerify {
 		f.logger.Warn("TLS verification disabled - this is insecure and should only be used for development",
-			zap.String("url", cfg.URL))
+			slog.String("url", cfg.URL))
 		tlsConfig.InsecureSkipVerify = true
 	}
 

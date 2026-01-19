@@ -9,17 +9,17 @@ import (
 
 	"github.com/vaayne/mcpx/internal/client"
 	"github.com/vaayne/mcpx/internal/config"
+	"github.com/vaayne/mcpx/internal/logging"
 	"github.com/vaayne/mcpx/internal/tools"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 // TestNewServer verifies server initialization
 func TestNewServer(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}
@@ -37,7 +37,7 @@ func TestNewServer(t *testing.T) {
 
 // TestRegisterBuiltinTools verifies built-in tools are registered
 func TestRegisterBuiltinTools(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}
@@ -82,7 +82,7 @@ func TestRegisterBuiltinTools(t *testing.T) {
 
 // TestConnectToRemoteServers_EmptyConfig verifies handling of empty config
 func TestConnectToRemoteServers_EmptyConfig(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}
@@ -97,7 +97,7 @@ func TestConnectToRemoteServers_EmptyConfig(t *testing.T) {
 
 // TestConnectToRemoteServers_DisabledServer verifies disabled servers are skipped
 func TestConnectToRemoteServers_DisabledServer(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	disabled := false
 	cfg := &config.Config{
@@ -125,7 +125,7 @@ func TestConnectToRemoteServers_DisabledServer(t *testing.T) {
 
 // TestConnectToRemoteServers_RequiredServerFails verifies required server failure handling
 func TestConnectToRemoteServers_RequiredServerFails(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	cfg := &config.Config{
 		MCPServers: map[string]config.MCPServer{
@@ -150,7 +150,7 @@ func TestConnectToRemoteServers_RequiredServerFails(t *testing.T) {
 
 // TestConnectToRemoteServers_OptionalServerFails verifies optional server failure handling
 func TestConnectToRemoteServers_OptionalServerFails(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	cfg := &config.Config{
 		MCPServers: map[string]config.MCPServer{
@@ -174,7 +174,7 @@ func TestConnectToRemoteServers_OptionalServerFails(t *testing.T) {
 
 // TestHandleBuiltinTool_Search verifies search tool routing
 func TestHandleBuiltinTool_Search(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}
@@ -208,7 +208,7 @@ func TestHandleBuiltinTool_Search(t *testing.T) {
 
 // TestHandleBuiltinTool_Exec verifies exec tool routing
 func TestHandleBuiltinTool_Exec(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}
@@ -242,7 +242,7 @@ func TestHandleBuiltinTool_Exec(t *testing.T) {
 
 // TestHandleBuiltinTool_Inspect verifies inspect tool routing
 func TestHandleBuiltinTool_Inspect(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}
@@ -275,7 +275,7 @@ func TestHandleBuiltinTool_Inspect(t *testing.T) {
 
 // TestHandleBuiltinTool_UnknownTool verifies error on unknown tool
 func TestHandleBuiltinTool_UnknownTool(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}
@@ -299,7 +299,7 @@ func TestHandleBuiltinTool_UnknownTool(t *testing.T) {
 
 // TestRegisterBuiltinToolHandler verifies built-in tool registration
 func TestRegisterBuiltinToolHandler(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}
@@ -330,7 +330,7 @@ func TestRegisterBuiltinToolHandler(t *testing.T) {
 
 // TestStop verifies server shutdown
 func TestStop(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}
@@ -344,7 +344,7 @@ func TestStop(t *testing.T) {
 
 // TestStop_NoClientManager verifies graceful handling when no client manager
 func TestStop_NoClientManager(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}
@@ -412,7 +412,7 @@ func TestNamespaceParsing(t *testing.T) {
 
 // TestServerTimeout verifies timeout configuration
 func TestServerTimeout(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
 	}

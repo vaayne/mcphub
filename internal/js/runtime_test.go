@@ -7,15 +7,15 @@ import (
 	"time"
 
 	"github.com/vaayne/mcpx/internal/client"
+	"github.com/vaayne/mcpx/internal/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 // TestNewRuntime verifies runtime initialization
 func TestNewRuntime(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -26,7 +26,7 @@ func TestNewRuntime(t *testing.T) {
 
 // TestNewRuntime_CustomTimeout verifies custom timeout configuration
 func TestNewRuntime_CustomTimeout(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -37,7 +37,7 @@ func TestNewRuntime_CustomTimeout(t *testing.T) {
 
 // TestExecute_Simple verifies simple script execution
 func TestExecute_Simple(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -52,7 +52,7 @@ func TestExecute_Simple(t *testing.T) {
 
 // TestExecute_WithLogging verifies mcp.log functionality
 func TestExecute_WithLogging(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -80,7 +80,7 @@ func TestExecute_WithLogging(t *testing.T) {
 
 // TestExecute_InvalidLogLevel verifies log level validation
 func TestExecute_InvalidLogLevel(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -100,7 +100,7 @@ func TestExecute_InvalidLogLevel(t *testing.T) {
 
 // TestExecute_AsyncAwait verifies async/await with timers works
 func TestExecute_AsyncAwait(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -123,7 +123,7 @@ func TestExecute_AsyncAwait(t *testing.T) {
 
 // TestExecute_RequireBuffer verifies require works via goja_nodejs
 func TestExecute_RequireBuffer(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -142,7 +142,7 @@ func TestExecute_RequireBuffer(t *testing.T) {
 
 // TestExecute_Timeout verifies timeout enforcement
 func TestExecute_Timeout(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -162,7 +162,7 @@ func TestExecute_Timeout(t *testing.T) {
 
 // TestExecute_ScriptSizeLimit verifies script size validation
 func TestExecute_ScriptSizeLimit(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -185,7 +185,7 @@ func TestExecute_ScriptSizeLimit(t *testing.T) {
 
 // TestExecute_SyntaxError verifies syntax error mapping
 func TestExecute_SyntaxError(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -202,7 +202,7 @@ func TestExecute_SyntaxError(t *testing.T) {
 
 // TestExecute_RuntimeError verifies runtime error mapping
 func TestExecute_RuntimeError(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -236,7 +236,7 @@ func TestExecute_RuntimeError(t *testing.T) {
 
 // TestExecute_TimeoutWithInterrupt verifies timeout with VM interruption
 func TestExecute_TimeoutWithInterrupt(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -264,7 +264,7 @@ func TestExecute_TimeoutWithInterrupt(t *testing.T) {
 
 // TestExecute_LogSanitization verifies log message sanitization
 func TestExecute_LogSanitization(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -314,7 +314,7 @@ func TestExecute_LogSanitization(t *testing.T) {
 
 // TestExecute_LogEntryLimit verifies max log entries enforcement
 func TestExecute_LogEntryLimit(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -339,7 +339,7 @@ func TestExecute_LogEntryLimit(t *testing.T) {
 
 // TestExecute_ConcurrentExecutionNoBlocking verifies concurrent execution doesn't block
 func TestExecute_ConcurrentExecutionNoBlocking(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -380,7 +380,7 @@ func TestExecute_ConcurrentExecutionNoBlocking(t *testing.T) {
 
 // TestExecute_ContextCancellationDuringExecution verifies context cancellation during execution
 func TestExecute_ContextCancellationDuringExecution(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -416,7 +416,7 @@ func TestExecute_ContextCancellationDuringExecution(t *testing.T) {
 
 // TestExecute_TypeAssertionError verifies proper handling of type assertion failures
 func TestExecute_TypeAssertionError(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -437,7 +437,7 @@ func TestExecute_TypeAssertionError(t *testing.T) {
 
 // TestExecute_ComplexScript verifies complex script execution
 func TestExecute_ComplexScript(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -464,7 +464,7 @@ func TestExecute_ComplexScript(t *testing.T) {
 
 // TestExecute_ContextCancellation verifies context cancellation handling
 func TestExecute_ContextCancellation(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -485,7 +485,7 @@ func TestExecute_ContextCancellation(t *testing.T) {
 
 // TestExecute_ReturnTypes verifies different return types
 func TestExecute_ReturnTypes(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -576,7 +576,7 @@ func TestSanitizeError(t *testing.T) {
 
 // TestCallTool_Validation verifies callTool input validation
 func TestCallTool_Validation(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -614,7 +614,7 @@ func TestCallTool_Validation(t *testing.T) {
 
 // TestMcpLog_EdgeCases verifies mcp.log edge cases
 func TestMcpLog_EdgeCases(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -654,7 +654,7 @@ func TestMcpLog_EdgeCases(t *testing.T) {
 
 // TestConsoleLog verifies console.log/warn/error work as aliases for mcp.log
 func TestConsoleLog(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -718,7 +718,7 @@ func TestConsoleLog(t *testing.T) {
 
 // TestThreadSafety verifies concurrent execution safety
 func TestThreadSafety(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -758,7 +758,7 @@ func TestThreadSafety(t *testing.T) {
 
 // TestExecute_ToolAuthorization verifies tool authorization enforcement
 func TestExecute_ToolAuthorization(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -807,7 +807,7 @@ func TestExecute_ToolAuthorization(t *testing.T) {
 
 // TestExecute_ToolAuthorizationNilAllowsAll verifies nil allowedTools allows all
 func TestExecute_ToolAuthorizationNilAllowsAll(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -825,7 +825,7 @@ func TestExecute_ToolAuthorizationNilAllowsAll(t *testing.T) {
 
 // TestExecute_ErrorSanitization verifies tool call errors are sanitized
 func TestExecute_ErrorSanitization(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -847,7 +847,7 @@ func TestExecute_ErrorSanitization(t *testing.T) {
 
 // TestExecute_ParamsTypeAssertion verifies proper error on invalid params type
 func TestExecute_ParamsTypeAssertion(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -883,7 +883,7 @@ func TestExecute_ParamsTypeAssertion(t *testing.T) {
 
 // TestExecute_TimeoutDoesNotLeakGoroutines verifies no goroutine leaks on timeout
 func TestExecute_TimeoutDoesNotLeakGoroutines(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -915,7 +915,7 @@ func TestExecute_TimeoutDoesNotLeakGoroutines(t *testing.T) {
 
 // TestExecute_ConcurrentTimeouts verifies concurrent timeouts don't interfere
 func TestExecute_ConcurrentTimeouts(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 

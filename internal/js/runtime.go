@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"slices"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	_ "github.com/dop251/goja_nodejs/url"
 	_ "github.com/dop251/goja_nodejs/util"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"go.uber.org/zap"
 )
 
 const (
@@ -97,7 +97,7 @@ func (m *ManagerCaller) CallTool(ctx context.Context, serverID, toolName string,
 
 // Runtime represents a JavaScript runtime for executing tool scripts
 type Runtime struct {
-	logger       *zap.Logger
+	logger       *slog.Logger
 	caller       ToolCaller
 	timeout      time.Duration
 	allowedTools map[string][]string // nil = allow all
@@ -110,7 +110,7 @@ type Config struct {
 }
 
 // NewRuntime creates a new JavaScript runtime
-func NewRuntime(logger *zap.Logger, caller ToolCaller, cfg *Config) *Runtime {
+func NewRuntime(logger *slog.Logger, caller ToolCaller, cfg *Config) *Runtime {
 	timeout := DefaultTimeout
 	var allowedTools map[string][]string
 

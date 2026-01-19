@@ -6,16 +6,16 @@ import (
 	"testing"
 
 	"github.com/vaayne/mcpx/internal/client"
+	"github.com/vaayne/mcpx/internal/logging"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 // List tool request handling
 func TestHandleListTool_NoResults(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -43,7 +43,7 @@ func TestHandleListTool_NoResults(t *testing.T) {
 }
 
 func TestHandleListTool_NoArgs(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -65,7 +65,7 @@ func TestHandleListTool_NoArgs(t *testing.T) {
 }
 
 func TestHandleListTool_InvalidJSON(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 

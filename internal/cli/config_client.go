@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -11,11 +12,10 @@ import (
 	"github.com/vaayne/mcpx/internal/transport"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"go.uber.org/zap"
 )
 
 type ConfigClient struct {
-	logger   *zap.Logger
+	logger   *slog.Logger
 	sessions map[string]*mcp.ClientSession
 	tools    map[string]*mcp.Tool
 	refs     map[string]toolRef
@@ -26,7 +26,7 @@ type toolRef struct {
 	toolName string
 }
 
-func NewConfigClient(ctx context.Context, configPath string, logger *zap.Logger, timeout time.Duration) (*ConfigClient, error) {
+func NewConfigClient(ctx context.Context, configPath string, logger *slog.Logger, timeout time.Duration) (*ConfigClient, error) {
 	if configPath == "" {
 		return nil, fmt.Errorf("--config is required for config mode")
 	}
@@ -48,11 +48,11 @@ func NewConfigClient(ctx context.Context, configPath string, logger *zap.Logger,
 
 	for serverID, serverCfg := range cfg.MCPServers {
 		if !serverCfg.IsEnabled() {
-			logger.Info("Skipping disabled server", zap.String("serverID", serverID))
+			logger.Info("Skipping disabled server", slog.String("serverID", serverID))
 			continue
 		}
 
-		logger.Info("Connecting to server", zap.String("serverID", serverID))
+		logger.Info("Connecting to server", slog.String("serverID", serverID))
 		transportName := strings.ToLower(serverCfg.GetTransport())
 
 		mcpTransport, err := factory.CreateTransport(serverCfg)
@@ -112,7 +112,7 @@ func NewConfigClient(ctx context.Context, configPath string, logger *zap.Logger,
 	}
 
 	if len(optionalErrors) > 0 {
-		logger.Warn("Some optional servers failed to connect", zap.Int("count", len(optionalErrors)))
+		logger.Warn("Some optional servers failed to connect", slog.Int("count", len(optionalErrors)))
 	}
 
 	return client, nil

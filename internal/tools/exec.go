@@ -5,12 +5,12 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/vaayne/mcpx/internal/client"
 	"github.com/vaayne/mcpx/internal/js"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"go.uber.org/zap"
 )
 
 //go:embed exec_description.md
@@ -31,7 +31,7 @@ type ExecError struct {
 
 // ExecuteCode executes JavaScript code using the provided ToolCaller.
 // This is the shared implementation used by both CLI and MCP tool handler.
-func ExecuteCode(ctx context.Context, logger *zap.Logger, caller js.ToolCaller, code string) (*ExecResult, error) {
+func ExecuteCode(ctx context.Context, logger *slog.Logger, caller js.ToolCaller, code string) (*ExecResult, error) {
 	// Validate code
 	if code == "" {
 		return nil, fmt.Errorf("code is required")
@@ -72,7 +72,7 @@ func ExecuteCode(ctx context.Context, logger *zap.Logger, caller js.ToolCaller, 
 }
 
 // HandleExecuteTool implements the execute built-in tool (MCP server handler)
-func HandleExecuteTool(ctx context.Context, logger *zap.Logger, manager *client.Manager, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func HandleExecuteTool(ctx context.Context, logger *slog.Logger, manager *client.Manager, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Unmarshal arguments
 	var args struct {
 		Code string `json:"code"`

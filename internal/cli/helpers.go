@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -12,8 +13,6 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // createRemoteClient creates a RemoteClient from command flags
@@ -31,9 +30,9 @@ func createRemoteClient(ctx context.Context, cmd *cobra.Command) (*RemoteClient,
 	}
 
 	// Initialize logging
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	logConfig := logging.Config{
@@ -79,13 +78,13 @@ func parseHeaders(headers []string) map[string]string {
 }
 
 // getLogger returns a configured logger based on command flags
-func getLogger(cmd *cobra.Command) *zap.Logger {
+func getLogger(cmd *cobra.Command) *slog.Logger {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	logFile, _ := cmd.Flags().GetString("log-file")
 
-	logLevel := zapcore.InfoLevel
+	logLevel := slog.LevelInfo
 	if verbose {
-		logLevel = zapcore.DebugLevel
+		logLevel = slog.LevelDebug
 	}
 
 	logConfig := logging.Config{
@@ -93,7 +92,7 @@ func getLogger(cmd *cobra.Command) *zap.Logger {
 		LogFilePath: logFile,
 	}
 	if _, err := logging.InitLogger(logConfig); err != nil {
-		return zap.NewNop() // Safe fallback
+		return logging.NopLogger() // Safe fallback
 	}
 
 	return logging.Logger

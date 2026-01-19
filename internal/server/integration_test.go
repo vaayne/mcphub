@@ -15,18 +15,18 @@ import (
 	"github.com/vaayne/mcpx/internal/client"
 	"github.com/vaayne/mcpx/internal/config"
 	"github.com/vaayne/mcpx/internal/js"
+	"github.com/vaayne/mcpx/internal/logging"
 	mcptesting "github.com/vaayne/mcpx/internal/testing"
 	"github.com/vaayne/mcpx/internal/tools"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 // TestIntegration_MockServerBasic tests basic mock server functionality
 func TestIntegration_MockServerBasic(t *testing.T) {
-	_ = zaptest.NewLogger(t)
+	_ = logging.NopLogger()
 
 	// Create mock server with echo tool
 	mockConfig := mcptesting.MockServerConfig{
@@ -76,7 +76,7 @@ func TestIntegration_MockServerBasic(t *testing.T) {
 
 // TestIntegration_MultipleTools tests server with multiple tools
 func TestIntegration_MultipleTools(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	// Create mock server with multiple tools
 	mockConfig := mcptesting.MockServerConfig{
@@ -116,7 +116,7 @@ func TestIntegration_MultipleTools(t *testing.T) {
 
 // TestIntegration_JSExecutionWithToolCalls tests JavaScript execution calling tools
 func TestIntegration_JSExecutionWithToolCalls(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	// Create client manager
 	manager := client.NewManager(logger)
@@ -140,7 +140,7 @@ func TestIntegration_JSExecutionWithToolCalls(t *testing.T) {
 
 // TestIntegration_JSExecutionWithLogging tests JavaScript execution with logging
 func TestIntegration_JSExecutionWithLogging(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -169,7 +169,7 @@ func TestIntegration_JSExecutionWithLogging(t *testing.T) {
 
 // TestIntegration_JSExecutionTimeout tests JavaScript execution timeout
 func TestIntegration_JSExecutionTimeout(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -195,7 +195,7 @@ func TestIntegration_JSExecutionTimeout(t *testing.T) {
 
 // TestIntegration_JSExecutionAsyncSupport ensures async features work end-to-end
 func TestIntegration_JSExecutionAsyncSupport(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -245,7 +245,7 @@ func TestIntegration_JSExecutionAsyncSupport(t *testing.T) {
 
 // TestIntegration_JSToolAuthorization tests tool authorization in JS runtime
 func TestIntegration_JSToolAuthorization(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -271,7 +271,7 @@ func TestIntegration_JSToolAuthorization(t *testing.T) {
 
 // TestIntegration_NamespaceCollisions tests handling of namespace collisions
 func TestIntegration_NamespaceCollisions(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
@@ -346,7 +346,7 @@ func TestIntegration_NamespaceCollisions(t *testing.T) {
 
 // TestIntegration_ConcurrentToolCalls tests concurrent tool calls
 func TestIntegration_ConcurrentToolCalls(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
@@ -391,7 +391,7 @@ func TestIntegration_ConcurrentToolCalls(t *testing.T) {
 
 // TestIntegration_ConcurrentJSExecutions tests concurrent JS executions
 func TestIntegration_ConcurrentJSExecutions(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -417,7 +417,7 @@ func TestIntegration_ConcurrentJSExecutions(t *testing.T) {
 
 // TestIntegration_ContextCancellation tests context cancellation propagation
 func TestIntegration_ContextCancellation(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -455,7 +455,7 @@ func TestIntegration_ContextCancellation(t *testing.T) {
 
 // TestIntegration_InspectTool tests inspect tool functionality
 func TestIntegration_InspectTool(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
@@ -489,7 +489,7 @@ func TestIntegration_InspectTool(t *testing.T) {
 
 // TestIntegration_InspectToolValidation tests inspect tool input validation
 func TestIntegration_InspectToolValidation(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
@@ -523,7 +523,7 @@ func TestIntegration_InspectToolValidation(t *testing.T) {
 
 // TestIntegration_JSExecutionSyntaxError tests JS syntax error handling
 func TestIntegration_JSExecutionSyntaxError(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -542,7 +542,7 @@ func TestIntegration_JSExecutionSyntaxError(t *testing.T) {
 
 // TestIntegration_JSExecutionRuntimeError tests JS runtime error handling
 func TestIntegration_JSExecutionRuntimeError(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -561,7 +561,7 @@ func TestIntegration_JSExecutionRuntimeError(t *testing.T) {
 
 // TestIntegration_JSScriptSizeLimit tests script size limit
 func TestIntegration_JSScriptSizeLimit(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -581,7 +581,7 @@ func TestIntegration_JSScriptSizeLimit(t *testing.T) {
 
 // TestIntegration_DisconnectAll tests disconnecting from all servers
 func TestIntegration_DisconnectAll(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
@@ -619,7 +619,7 @@ func TestIntegration_LogFileHandling(t *testing.T) {
 
 // TestIntegration_ExecuteToolWithError tests exec tool error handling
 func TestIntegration_ExecuteToolWithError(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),
@@ -664,7 +664,7 @@ func TestIntegration_ExecuteToolWithError(t *testing.T) {
 
 // TestIntegration_BuiltinToolTimeout tests built-in tool timeout
 func TestIntegration_BuiltinToolTimeout(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 
 	cfg := &config.Config{
 		MCPServers: make(map[string]config.MCPServer),

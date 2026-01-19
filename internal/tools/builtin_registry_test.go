@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	"github.com/vaayne/mcpx/internal/config"
+	"github.com/vaayne/mcpx/internal/logging"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap/zaptest"
 )
 
 // Registry creation and CRUD
 func TestNewBuiltinToolRegistry(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	registry := NewBuiltinToolRegistry(logger)
 
 	assert.NotNil(t, registry)
@@ -21,7 +21,7 @@ func TestNewBuiltinToolRegistry(t *testing.T) {
 }
 
 func TestRegisterTool(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	registry := NewBuiltinToolRegistry(logger)
 
 	tool := config.BuiltinTool{
@@ -39,7 +39,7 @@ func TestRegisterTool(t *testing.T) {
 }
 
 func TestGetTool_NotFound(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	registry := NewBuiltinToolRegistry(logger)
 
 	_, exists := registry.GetTool("nonexistent")
@@ -47,7 +47,7 @@ func TestGetTool_NotFound(t *testing.T) {
 }
 
 func TestGetAllTools(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	registry := NewBuiltinToolRegistry(logger)
 
 	tools := []config.BuiltinTool{
@@ -75,7 +75,7 @@ func TestGetAllTools(t *testing.T) {
 
 // Concurrency safety
 func TestBuiltinToolRegistry_ThreadSafety(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	registry := NewBuiltinToolRegistry(logger)
 
 	done := make(chan bool)

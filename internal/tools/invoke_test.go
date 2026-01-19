@@ -7,16 +7,16 @@ import (
 	"testing"
 
 	"github.com/vaayne/mcpx/internal/client"
+	"github.com/vaayne/mcpx/internal/logging"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 // TestHandleInvokeTool_EmptyName tests error when name is empty
 func TestHandleInvokeTool_EmptyName(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -38,7 +38,7 @@ func TestHandleInvokeTool_EmptyName(t *testing.T) {
 
 // TestHandleInvokeTool_NoNamespace tests error when name lacks namespace
 func TestHandleInvokeTool_NoNamespace(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -62,7 +62,7 @@ func TestHandleInvokeTool_NoNamespace(t *testing.T) {
 
 // TestHandleInvokeTool_EmptyServerID tests error when server ID is empty
 func TestHandleInvokeTool_EmptyServerID(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -86,7 +86,7 @@ func TestHandleInvokeTool_EmptyServerID(t *testing.T) {
 
 // TestHandleInvokeTool_EmptyToolName tests error when tool name is empty
 func TestHandleInvokeTool_EmptyToolName(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -110,7 +110,7 @@ func TestHandleInvokeTool_EmptyToolName(t *testing.T) {
 
 // TestHandleInvokeTool_ServerNotFound tests error when server doesn't exist
 func TestHandleInvokeTool_ServerNotFound(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -134,7 +134,7 @@ func TestHandleInvokeTool_ServerNotFound(t *testing.T) {
 
 // TestHandleInvokeTool_NameTooLong tests error when name exceeds max length
 func TestHandleInvokeTool_NameTooLong(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -160,7 +160,7 @@ func TestHandleInvokeTool_NameTooLong(t *testing.T) {
 
 // TestHandleInvokeTool_InvalidJSON tests error when arguments are invalid JSON
 func TestHandleInvokeTool_InvalidJSON(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
@@ -178,7 +178,7 @@ func TestHandleInvokeTool_InvalidJSON(t *testing.T) {
 
 // TestHandleInvokeTool_ContextCancellation tests context cancellation handling
 func TestHandleInvokeTool_ContextCancellation(t *testing.T) {
-	logger := zaptest.NewLogger(t)
+	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
