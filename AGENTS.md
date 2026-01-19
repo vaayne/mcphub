@@ -45,7 +45,7 @@ Server and CLI modes share connection logic in `internal/cli/` (config_client, r
 **Server mode flow:**
 1. Load and validate config → `internal/config/`
 2. Connect to each MCP server (stdio subprocess or http/sse client) → `internal/client/` + `internal/transport/`
-3. Discover tools from each server, namespace them (`servername__toolname`)
+3. Discover tools from each server, namespace them (camelCase: `serverNameToolName`)
 4. Start MCP server on stdio/http/sse, expose aggregated tools → `internal/server/`
 5. Route incoming tool calls to appropriate backend, return results
 
@@ -59,7 +59,7 @@ Built-in tools (`search`, `execute`, `refreshTools`) are registered in `internal
 
 ## Key Design Decisions
 
-- **Tool namespacing**: All backend tools are prefixed with server name to avoid conflicts (`github__search` not `search`)
+- **Tool namespacing**: All backend tools are prefixed with server name in camelCase to avoid conflicts (`githubSearch` not `search`)
 - **Sync-only JS**: The `execute` tool blocks async to prevent complexity and security issues (no Promises, no setTimeout)
 - **Transport abstraction**: `internal/transport/` provides unified interface for stdio/http/sse so client code doesn't care about transport type
 - **Fail-open by default**: Servers with `required: false` (default) won't block hub startup if they fail to connect

@@ -7,7 +7,7 @@ A lightweight hub that connects multiple MCP servers into one. Think of it as a 
 If you're using multiple MCP servers (GitHub, filesystem, databases, etc.), managing them separately gets messy. MCP Hub gives you:
 
 - **One connection** instead of many - your client connects to the hub, done
-- **Tool namespacing** - no more conflicts when two servers have a `search` tool (`github__search` vs `files__search`)
+- **Tool namespacing** - no more conflicts when two servers have a `search` tool (`githubSearch` vs `filesSearch`)
 - **Built-in scripting** - chain tool calls together with JavaScript
 - **Auto-reconnection** - servers crash sometimes, the hub handles it
 
@@ -44,7 +44,7 @@ mh -c config.json
 
 # Or explore tools from CLI
 mh -c config.json list
-mh -c config.json invoke filesystem__read_file '{"path": "/tmp/test.txt"}'
+mh -c config.json invoke filesystemReadFile '{"path": "/tmp/test.txt"}'
 ```
 
 ## Configuration
@@ -103,8 +103,8 @@ mh -c config.json
 ```bash
 # From config file (connects to all servers defined in config)
 mh -c config.json list
-mh -c config.json inspect github__search_repos
-mh -c config.json invoke github__search_repos '{"query": "mcp"}'
+mh -c config.json inspect githubSearchRepos
+mh -c config.json invoke githubSearchRepos '{"query": "mcp"}'
 
 # From remote URL
 mh -u https://mcp.example.com list
@@ -126,8 +126,8 @@ The hub includes a few tools of its own:
 **`execute`** - Run JavaScript that can call any tool. Useful for chaining operations:
 
 ```javascript
-const repos = mcp.callTool("github__search_repos", { query: "mcp" });
-const readme = mcp.callTool("github__get_file", { repo: repos[0].name, path: "README.md" });
+const repos = mcp.callTool("githubSearchRepos", { query: "mcp" });
+const readme = mcp.callTool("githubGetFile", { repo: repos[0].name, path: "README.md" });
 readme;
 ```
 
@@ -188,7 +188,7 @@ See the [mcp-skill-gen](https://github.com/vaayne/mcphub) workflow for automated
 
 **"async functions are not allowed"** - The `execute` tool only supports sync code. Remove any `async`/`await` or `Promise` usage.
 
-**Tool not found** - Remember tools are namespaced: `servername__toolname`. Use `mh list` to see available tools.
+**Tool not found** - Remember tools are namespaced with server prefix in camelCase: `serverNameToolName`. Use `mh list` to see available tools.
 
 ## License
 
