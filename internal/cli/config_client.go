@@ -71,10 +71,18 @@ func NewConfigClient(ctx context.Context, configPath string, logger *slog.Logger
 
 		connectCtx, cancel := context.WithTimeout(ctx, timeout)
 		session, err := clientInstance.Connect(connectCtx, mcpTransport, nil)
+		// For non-SSE transports, cancel immediately after connect.
+		// For SSE, the context is used by background goroutines, so we don't cancel it here.
+		// The context will be canceled when the parent ctx is canceled.
 		if transportName != "sse" {
 			cancel()
+		} else {
+			// Acknowledge that we're intentionally not canceling for SSE.
+			// The cancel func will be called when the parent context is done.
+			_ = cancel
 		}
 		if err != nil {
+			cancel() // Always cancel on error
 			if serverCfg.Required {
 				return nil, fmt.Errorf("required server %s failed to connect: %w", serverID, err)
 			}

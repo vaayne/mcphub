@@ -102,12 +102,17 @@ func NewRemoteClient(ctx context.Context, opts RemoteClientOpts) (*RemoteClient,
 	// the SSE transport uses a background goroutine that reads from the context.
 	// Canceling would close the SSE stream and cause subsequent RPC calls to fail with EOF.
 	connectCtx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
-	if transport != "sse" {
-		defer cancel()
-	}
+	defer func() {
+		// For non-SSE transports, always cancel the context.
+		// For SSE, the context is used by background goroutines, so we don't cancel.
+		if transport != "sse" {
+			cancel()
+		}
+	}()
 
 	session, err := client.Connect(connectCtx, mcpTransport, nil)
 	if err != nil {
+		cancel() // Always cancel on error, even for SSE
 		return nil, wrapConnectionError(err, opts.ServerURL, timeout)
 	}
 
