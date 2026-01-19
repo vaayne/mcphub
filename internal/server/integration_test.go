@@ -484,7 +484,7 @@ func TestIntegration_InspectTool(t *testing.T) {
 
 	_, err = server.handleBuiltinTool(context.Background(), "inspect", req)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "tool not found")
+	assert.Contains(t, err.Error(), "not found")
 }
 
 // TestIntegration_InspectToolValidation tests inspect tool input validation

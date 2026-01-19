@@ -7,7 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vaayne/mcpx/internal/tools"
+
 	ucli "github.com/urfave/cli/v3"
 )
 
@@ -33,8 +34,24 @@ Examples:
   # List tools from config (stdio/http/sse)
   mh -c config.json list
 
+  # List tools filtered by server
+  mh -c config.json list --server github
+
+  # List tools filtered by keywords
+  mh -c config.json list --query "search,file"
+
   # List tools from a stdio MCP server
   mh --stdio list -- npx @modelcontextprotocol/server-everything`,
+	Flags: []ucli.Flag{
+		&ucli.StringFlag{
+			Name:  "server",
+			Usage: "filter tools by server name",
+		},
+		&ucli.StringFlag{
+			Name:  "query",
+			Usage: "comma-separated keywords for search (matches name or description)",
+		},
+	},
 	Action: runList,
 }
 
@@ -63,24 +80,31 @@ func runList(ctx context.Context, cmd *ucli.Command) error {
 	}
 
 	jsonOutput := cmd.Bool("json")
+	serverFilter := cmd.String("server")
+	queryFilter := cmd.String("query")
 
-	var tools []*mcp.Tool
+	// Create provider and get result using shared core
+	var provider tools.ToolProvider
 	var mapper *ToolNameMapper
+	var cleanup func() error
 
 	if configPath != "" {
 		client, err := createConfigClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		cleanup = client.Close
+		provider = client
 
-		tools, err = client.ListTools(ctx)
+		// Build mapper for name conversion
+		toolList, err := client.ListTools(ctx)
 		if err != nil {
+			cleanup()
 			return err
 		}
-
-		mapper, err = NewToolNameMapperWithCollisionCheck(tools)
+		mapper, err = NewToolNameMapperWithCollisionCheck(toolList)
 		if err != nil {
+			cleanup()
 			return err
 		}
 	} else if stdio {
@@ -88,32 +112,44 @@ func runList(ctx context.Context, cmd *ucli.Command) error {
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		cleanup = client.Close
+		provider = client
 
-		tools, err = client.ListTools(ctx)
+		toolList, err := client.ListTools(ctx)
 		if err != nil {
+			cleanup()
 			return err
 		}
-
-		mapper = NewToolNameMapper(tools)
+		mapper = NewToolNameMapper(toolList)
 	} else {
 		client, err := createRemoteClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		cleanup = client.Close
+		provider = client
 
-		tools, err = client.ListTools(ctx)
+		toolList, err := client.ListTools(ctx)
 		if err != nil {
+			cleanup()
 			return err
 		}
+		mapper = NewToolNameMapper(toolList)
+	}
+	defer cleanup()
 
-		mapper = NewToolNameMapper(tools)
+	// Call shared core function
+	result, err := tools.ListTools(ctx, provider, tools.ListOptions{
+		Server: serverFilter,
+		Query:  queryFilter,
+	})
+	if err != nil {
+		return err
 	}
 
 	// Sort tools by JS name for consistent output
-	sort.Slice(tools, func(i, j int) bool {
-		return mapper.ToJSName(tools[i].Name) < mapper.ToJSName(tools[j].Name)
+	sort.Slice(result.Tools, func(i, j int) bool {
+		return mapper.ToJSName(result.Tools[i].Name) < mapper.ToJSName(result.Tools[j].Name)
 	})
 
 	// Output
@@ -124,8 +160,8 @@ func runList(ctx context.Context, cmd *ucli.Command) error {
 			Description string `json:"description"`
 		}
 
-		toolList := make([]toolInfo, 0, len(tools))
-		for _, tool := range tools {
+		toolList := make([]toolInfo, 0, len(result.Tools))
+		for _, tool := range result.Tools {
 			toolList = append(toolList, toolInfo{
 				Name:        mapper.ToJSName(tool.Name),
 				Description: tool.Description,
@@ -138,13 +174,13 @@ func runList(ctx context.Context, cmd *ucli.Command) error {
 		}
 		fmt.Println(string(output))
 	} else {
-		// Text output: similar to renderAvailableToolsLines style
-		if len(tools) == 0 {
+		// Text output
+		if len(result.Tools) == 0 {
 			fmt.Println("No tools available")
 			return nil
 		}
 
-		for _, tool := range tools {
+		for _, tool := range result.Tools {
 			jsName := mapper.ToJSName(tool.Name)
 			desc := tool.Description
 			if strings.TrimSpace(desc) == "" {

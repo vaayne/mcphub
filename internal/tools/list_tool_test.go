@@ -19,6 +19,8 @@ func TestHandleListTool_NoResults(t *testing.T) {
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
+	provider := NewManagerAdapter(manager)
+
 	args := map[string]any{
 		"query": "nonexistent",
 	}
@@ -32,7 +34,7 @@ func TestHandleListTool_NoResults(t *testing.T) {
 		},
 	}
 
-	result, err := HandleListTool(context.Background(), manager, req)
+	result, err := HandleListTool(context.Background(), provider, req)
 	require.NoError(t, err)
 
 	textContent, ok := result.Content[0].(*mcp.TextContent)
@@ -47,6 +49,8 @@ func TestHandleListTool_NoArgs(t *testing.T) {
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
+	provider := NewManagerAdapter(manager)
+
 	req := &mcp.CallToolRequest{
 		Params: &mcp.CallToolParamsRaw{
 			Name:      "list",
@@ -54,7 +58,7 @@ func TestHandleListTool_NoArgs(t *testing.T) {
 		},
 	}
 
-	result, err := HandleListTool(context.Background(), manager, req)
+	result, err := HandleListTool(context.Background(), provider, req)
 	require.NoError(t, err)
 
 	textContent, ok := result.Content[0].(*mcp.TextContent)
@@ -69,6 +73,8 @@ func TestHandleListTool_InvalidJSON(t *testing.T) {
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
+	provider := NewManagerAdapter(manager)
+
 	req := &mcp.CallToolRequest{
 		Params: &mcp.CallToolParamsRaw{
 			Name:      "list",
@@ -76,7 +82,7 @@ func TestHandleListTool_InvalidJSON(t *testing.T) {
 		},
 	}
 
-	_, err := HandleListTool(context.Background(), manager, req)
+	_, err := HandleListTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse list arguments")
 }

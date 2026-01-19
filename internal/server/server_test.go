@@ -270,7 +270,7 @@ func TestHandleBuiltinTool_Inspect(t *testing.T) {
 
 	_, err = server.handleBuiltinTool(context.Background(), "inspect", req)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "tool not found")
+	assert.Contains(t, err.Error(), "not found")
 }
 
 // TestHandleBuiltinTool_UnknownTool verifies error on unknown tool

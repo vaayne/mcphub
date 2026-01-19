@@ -20,6 +20,8 @@ func TestHandleInvokeTool_EmptyName(t *testing.T) {
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
+	provider := NewManagerAdapter(manager)
+
 	args := map[string]any{}
 	argsJSON, err := json.Marshal(args)
 	require.NoError(t, err)
@@ -31,7 +33,7 @@ func TestHandleInvokeTool_EmptyName(t *testing.T) {
 		},
 	}
 
-	_, err = HandleInvokeTool(context.Background(), manager, req)
+	_, err = HandleInvokeTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "name is required")
 }
@@ -41,6 +43,8 @@ func TestHandleInvokeTool_NoNamespace(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
+
+	provider := NewManagerAdapter(manager)
 
 	args := map[string]any{
 		"name": "toolwithoutnamespace",
@@ -55,7 +59,7 @@ func TestHandleInvokeTool_NoNamespace(t *testing.T) {
 		},
 	}
 
-	_, err = HandleInvokeTool(context.Background(), manager, req)
+	_, err = HandleInvokeTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "must be namespaced")
 }
@@ -65,6 +69,8 @@ func TestHandleInvokeTool_EmptyServerID(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
+
+	provider := NewManagerAdapter(manager)
 
 	args := map[string]any{
 		"name": "__toolname",
@@ -79,7 +85,7 @@ func TestHandleInvokeTool_EmptyServerID(t *testing.T) {
 		},
 	}
 
-	_, err = HandleInvokeTool(context.Background(), manager, req)
+	_, err = HandleInvokeTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "server ID cannot be empty")
 }
@@ -89,6 +95,8 @@ func TestHandleInvokeTool_EmptyToolName(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
+
+	provider := NewManagerAdapter(manager)
 
 	args := map[string]any{
 		"name": "server__",
@@ -103,7 +111,7 @@ func TestHandleInvokeTool_EmptyToolName(t *testing.T) {
 		},
 	}
 
-	_, err = HandleInvokeTool(context.Background(), manager, req)
+	_, err = HandleInvokeTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "tool name cannot be empty")
 }
@@ -113,6 +121,8 @@ func TestHandleInvokeTool_ServerNotFound(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
+
+	provider := NewManagerAdapter(manager)
 
 	args := map[string]any{
 		"name": "nonexistent__tool",
@@ -127,7 +137,7 @@ func TestHandleInvokeTool_ServerNotFound(t *testing.T) {
 		},
 	}
 
-	_, err = HandleInvokeTool(context.Background(), manager, req)
+	_, err = HandleInvokeTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "server not found")
 }
@@ -137,6 +147,8 @@ func TestHandleInvokeTool_NameTooLong(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
+
+	provider := NewManagerAdapter(manager)
 
 	// Create name longer than 500 characters
 	longName := "server__" + strings.Repeat("a", 500)
@@ -153,7 +165,7 @@ func TestHandleInvokeTool_NameTooLong(t *testing.T) {
 		},
 	}
 
-	_, err = HandleInvokeTool(context.Background(), manager, req)
+	_, err = HandleInvokeTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "name too long")
 }
@@ -164,6 +176,8 @@ func TestHandleInvokeTool_InvalidJSON(t *testing.T) {
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
+	provider := NewManagerAdapter(manager)
+
 	req := &mcp.CallToolRequest{
 		Params: &mcp.CallToolParamsRaw{
 			Name:      "invoke",
@@ -171,7 +185,7 @@ func TestHandleInvokeTool_InvalidJSON(t *testing.T) {
 		},
 	}
 
-	_, err := HandleInvokeTool(context.Background(), manager, req)
+	_, err := HandleInvokeTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse")
 }
@@ -181,6 +195,8 @@ func TestHandleInvokeTool_ContextCancellation(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
+
+	provider := NewManagerAdapter(manager)
 
 	args := map[string]any{
 		"name": "server__tool",
@@ -198,7 +214,7 @@ func TestHandleInvokeTool_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	_, err = HandleInvokeTool(ctx, manager, req)
+	_, err = HandleInvokeTool(ctx, provider, req)
 	assert.Error(t, err)
 	assert.Equal(t, context.Canceled, err)
 }

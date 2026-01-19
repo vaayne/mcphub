@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vaayne/mcpx/internal/tools"
+
 	ucli "github.com/urfave/cli/v3"
 )
 
@@ -72,31 +73,27 @@ func runInspect(ctx context.Context, cmd *ucli.Command) error {
 	toolName := filteredArgs[0]
 	jsonOutput := cmd.Bool("json")
 
-	var tool *mcp.Tool
+	// Create provider and mapper
+	var provider tools.ToolProvider
 	var mapper *ToolNameMapper
+	var cleanup func() error
 
 	if configPath != "" {
 		client, err := createConfigClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		cleanup = client.Close
+		provider = client
 
-		tools, err := client.ListTools(ctx)
+		toolList, err := client.ListTools(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to list tools: %w", err)
-		}
-		mapper, err = NewToolNameMapperWithCollisionCheck(tools)
-		if err != nil {
+			cleanup()
 			return err
 		}
-		originalName := mapper.ToOriginal(toolName)
-		if err := ensureNamespacedToolName(originalName); err != nil {
-			return err
-		}
-
-		tool, err = client.GetTool(ctx, originalName)
+		mapper, err = NewToolNameMapperWithCollisionCheck(toolList)
 		if err != nil {
+			cleanup()
 			return err
 		}
 	} else if stdio {
@@ -104,41 +101,48 @@ func runInspect(ctx context.Context, cmd *ucli.Command) error {
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		cleanup = client.Close
+		provider = client
 
-		tools, err := client.ListTools(ctx)
+		toolList, err := client.ListTools(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to list tools: %w", err)
-		}
-		mapper = NewToolNameMapper(tools)
-		originalName := mapper.ToOriginal(toolName)
-
-		tool, err = client.GetTool(ctx, originalName)
-		if err != nil {
+			cleanup()
 			return err
 		}
+		mapper = NewToolNameMapper(toolList)
 	} else {
 		client, err := createRemoteClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		cleanup = client.Close
+		provider = client
 
-		tools, err := client.ListTools(ctx)
+		toolList, err := client.ListTools(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to list tools: %w", err)
+			cleanup()
+			return err
 		}
-		mapper = NewToolNameMapper(tools)
-		originalName := mapper.ToOriginal(toolName)
+		mapper = NewToolNameMapper(toolList)
+	}
+	defer cleanup()
 
-		tool, err = client.GetTool(ctx, originalName)
-		if err != nil {
-			return err // Error message from RemoteClient is already user-friendly
+	// Convert JS name to original name
+	originalName := mapper.ToOriginal(toolName)
+	if configPath != "" {
+		if err := ensureNamespacedToolName(originalName); err != nil {
+			return err
 		}
 	}
 
+	// Call shared core function
+	result, err := tools.InspectTool(ctx, provider, originalName)
+	if err != nil {
+		return err
+	}
+
 	// Get JS name for display
-	jsName := mapper.ToJSName(tool.Name)
+	jsName := mapper.ToJSName(result.Name)
 
 	// Output
 	if jsonOutput {
@@ -150,8 +154,8 @@ func runInspect(ctx context.Context, cmd *ucli.Command) error {
 		}
 		output, err := json.MarshalIndent(toolOutput{
 			Name:        jsName,
-			Description: tool.Description,
-			InputSchema: tool.InputSchema,
+			Description: result.Description,
+			InputSchema: result.InputSchema,
 		}, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -160,11 +164,11 @@ func runInspect(ctx context.Context, cmd *ucli.Command) error {
 	} else {
 		// Text output: pretty-print tool schema
 		fmt.Printf("Name: %s\n", jsName)
-		fmt.Printf("Description: %s\n", tool.Description)
+		fmt.Printf("Description: %s\n", result.Description)
 
-		if tool.InputSchema != nil {
+		if result.InputSchema != nil {
 			fmt.Println("\nInput Schema:")
-			schemaJSON, err := json.MarshalIndent(tool.InputSchema, "  ", "  ")
+			schemaJSON, err := json.MarshalIndent(result.InputSchema, "  ", "  ")
 			if err != nil {
 				fmt.Printf("  (error formatting schema: %v)\n", err)
 			} else {

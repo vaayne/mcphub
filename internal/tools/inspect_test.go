@@ -20,6 +20,8 @@ func TestHandleInspectTool_EmptyName(t *testing.T) {
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
+	provider := NewManagerAdapter(manager)
+
 	args := map[string]any{}
 	argsJSON, err := json.Marshal(args)
 	require.NoError(t, err)
@@ -31,7 +33,7 @@ func TestHandleInspectTool_EmptyName(t *testing.T) {
 		},
 	}
 
-	_, err = HandleInspectTool(context.Background(), manager, req)
+	_, err = HandleInspectTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "name is required")
 }
@@ -41,6 +43,8 @@ func TestHandleInspectTool_NoNamespace(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
+
+	provider := NewManagerAdapter(manager)
 
 	args := map[string]any{
 		"name": "toolwithoutnamespace",
@@ -55,7 +59,7 @@ func TestHandleInspectTool_NoNamespace(t *testing.T) {
 		},
 	}
 
-	_, err = HandleInspectTool(context.Background(), manager, req)
+	_, err = HandleInspectTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "must be namespaced")
 }
@@ -65,6 +69,8 @@ func TestHandleInspectTool_ToolNotFound(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
+
+	provider := NewManagerAdapter(manager)
 
 	args := map[string]any{
 		"name": "server__nonexistent",
@@ -79,9 +85,9 @@ func TestHandleInspectTool_ToolNotFound(t *testing.T) {
 		},
 	}
 
-	_, err = HandleInspectTool(context.Background(), manager, req)
+	_, err = HandleInspectTool(context.Background(), provider, req)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "tool not found")
+	assert.Contains(t, err.Error(), "not found")
 }
 
 // TestHandleInspectTool_NameTooLong tests error when name exceeds max length
@@ -89,6 +95,8 @@ func TestHandleInspectTool_NameTooLong(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
+
+	provider := NewManagerAdapter(manager)
 
 	// Create name longer than 500 characters
 	longName := "server__" + strings.Repeat("a", 500)
@@ -105,7 +113,7 @@ func TestHandleInspectTool_NameTooLong(t *testing.T) {
 		},
 	}
 
-	_, err = HandleInspectTool(context.Background(), manager, req)
+	_, err = HandleInspectTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "name too long")
 }
@@ -116,6 +124,8 @@ func TestHandleInspectTool_InvalidJSON(t *testing.T) {
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
 
+	provider := NewManagerAdapter(manager)
+
 	req := &mcp.CallToolRequest{
 		Params: &mcp.CallToolParamsRaw{
 			Name:      "inspect",
@@ -123,7 +133,7 @@ func TestHandleInspectTool_InvalidJSON(t *testing.T) {
 		},
 	}
 
-	_, err := HandleInspectTool(context.Background(), manager, req)
+	_, err := HandleInspectTool(context.Background(), provider, req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse")
 }
@@ -133,6 +143,8 @@ func TestHandleInspectTool_ContextCancellation(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
+
+	provider := NewManagerAdapter(manager)
 
 	args := map[string]any{
 		"name": "server__tool",
@@ -150,7 +162,7 @@ func TestHandleInspectTool_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	_, err = HandleInspectTool(ctx, manager, req)
+	_, err = HandleInspectTool(ctx, provider, req)
 	assert.Error(t, err)
 	assert.Equal(t, context.Canceled, err)
 }

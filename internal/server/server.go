@@ -334,13 +334,16 @@ func (s *Server) handleBuiltinTool(ctx context.Context, toolName string, req *mc
 	callCtx, cancel := context.WithTimeout(ctx, s.toolCallTimeout)
 	defer cancel()
 
+	// Create ToolProvider adapter for the client manager
+	provider := tools.NewManagerAdapter(s.clientManager)
+
 	switch toolName {
 	case "list":
-		return tools.HandleListTool(callCtx, s.clientManager, req)
+		return tools.HandleListTool(callCtx, provider, req)
 	case "inspect":
-		return tools.HandleInspectTool(callCtx, s.clientManager, req)
+		return tools.HandleInspectTool(callCtx, provider, req)
 	case "invoke":
-		return tools.HandleInvokeTool(callCtx, s.clientManager, req)
+		return tools.HandleInvokeTool(callCtx, provider, req)
 	case "exec":
 		return tools.HandleExecuteTool(callCtx, s.logger, s.clientManager, req)
 	default:

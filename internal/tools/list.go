@@ -8,26 +8,188 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/vaayne/mcpx/internal/client"
-
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 //go:embed list_description.md
 var ListDescription string
 
-// ListToolResult represents a tool in the list (kept for internal use)
+// ListOptions contains options for listing tools
+type ListOptions struct {
+	Server string // Optional: filter by server name
+	Query  string // Optional: comma-separated keywords for search
+}
+
+// ListToolResult represents a tool in the list result
 type ListToolResult struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
-	Server      string         `json:"server"`
+	Server      string         `json:"server,omitempty"`
 	InputSchema map[string]any `json:"inputSchema,omitempty"`
 }
 
-// ListToolsResponse represents the response from the list tool (kept for internal use)
-type ListToolsResponse struct {
+// ListResult represents the result of listing tools
+type ListResult struct {
 	Tools []ListToolResult `json:"tools"`
 	Total int              `json:"total"`
+}
+
+// ListTools is the shared core function for listing tools.
+// Used by both CLI and MCP server handlers.
+func ListTools(ctx context.Context, provider ToolProvider, opts ListOptions) (*ListResult, error) {
+	// Validate query length
+	const maxQueryLength = 1000
+	if len(opts.Query) > maxQueryLength {
+		return nil, fmt.Errorf("query too long (max %d characters)", maxQueryLength)
+	}
+
+	// Get all tools
+	tools, err := provider.ListTools(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tools: %w", err)
+	}
+
+	var results []ListToolResult
+	const maxResults = 100 // Limit results to prevent DoS
+	totalMatches := 0
+
+	for _, tool := range tools {
+		// Check context cancellation
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		// Extract server ID from namespaced name (format: serverID__toolName)
+		serverID := ""
+		if before, _, ok := strings.Cut(tool.Name, "__"); ok {
+			serverID = before
+		}
+
+		// Filter by server if specified
+		if opts.Server != "" && !strings.EqualFold(serverID, opts.Server) {
+			continue
+		}
+
+		// Filter by query keywords if specified
+		if !matchesKeywords(tool.Name, tool.Description, opts.Query) {
+			continue
+		}
+
+		totalMatches++
+
+		if len(results) >= maxResults {
+			continue
+		}
+
+		// Convert InputSchema to map if possible
+		var inputSchema map[string]any
+		if tool.InputSchema != nil {
+			if schema, ok := tool.InputSchema.(map[string]any); ok {
+				inputSchema = schema
+			}
+		}
+
+		results = append(results, ListToolResult{
+			Name:        tool.Name,
+			Description: tool.Description,
+			Server:      serverID,
+			InputSchema: inputSchema,
+		})
+	}
+
+	// Sort results by name for consistent output
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Name < results[j].Name
+	})
+
+	return &ListResult{
+		Tools: results,
+		Total: totalMatches,
+	}, nil
+}
+
+// HandleListTool handles the list tool call (MCP server handler)
+func HandleListTool(ctx context.Context, provider ToolProvider, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// Parse arguments
+	var args struct {
+		Server string `json:"server"`
+		Query  string `json:"query"`
+	}
+	if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
+		return nil, fmt.Errorf("failed to parse list arguments: %w", err)
+	}
+
+	// Call shared core function
+	result, err := ListTools(ctx, provider, ListOptions{
+		Server: args.Server,
+		Query:  args.Query,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Build JavaScript function stubs output for MCP
+	output := FormatListResultAsJSDoc(result)
+
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{
+			&mcp.TextContent{
+				Text: output,
+			},
+		},
+	}, nil
+}
+
+// FormatListResultAsJSDoc formats the list result as JSDoc function stubs
+func FormatListResultAsJSDoc(result *ListResult) string {
+	var output strings.Builder
+	output.WriteString(fmt.Sprintf("// Total: %d tools", result.Total))
+	if result.Total > len(result.Tools) {
+		output.WriteString(fmt.Sprintf(" (showing first %d)", len(result.Tools)))
+	}
+	output.WriteString("\n\n")
+
+	for i, tool := range result.Tools {
+		if i > 0 {
+			output.WriteString("\n")
+		}
+		output.WriteString(schemaToJSDoc(tool.Name, tool.Description, tool.InputSchema))
+	}
+
+	return output.String()
+}
+
+// matchesKeywords checks if tool matches any of the comma-separated keywords
+func matchesKeywords(name, description, query string) bool {
+	if query == "" {
+		return true // no filter, match all
+	}
+
+	nameLower := strings.ToLower(name)
+	descLower := strings.ToLower(description)
+
+	// Split by comma and match if ANY keyword appears in name or description
+	keywords := strings.Split(query, ",")
+	foundKeyword := false
+	for _, raw := range keywords {
+		kw := strings.TrimSpace(strings.ToLower(raw))
+		if kw == "" {
+			continue
+		}
+		foundKeyword = true
+		if strings.Contains(nameLower, kw) || strings.Contains(descLower, kw) {
+			return true
+		}
+	}
+
+	// If no non-empty keywords were provided, treat as no filter
+	if !foundKeyword {
+		return true
+	}
+
+	return false
 }
 
 // jsonSchemaTypeToJS converts JSON Schema types to JavaScript types for JSDoc
@@ -115,134 +277,4 @@ func schemaToJSDoc(toolName, description string, inputSchema map[string]any) str
 	sb.WriteString(fmt.Sprintf("function %s(params) {}\n", toolName))
 
 	return sb.String()
-}
-
-// HandleListTool handles the list tool call
-func HandleListTool(ctx context.Context, manager *client.Manager, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// Parse arguments
-	var args struct {
-		Server string `json:"server"` // optional: filter by server name
-		Query  string `json:"query"`  // optional: comma-separated keywords; tool matches if ANY keyword appears in name or description
-	}
-	if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
-		return nil, fmt.Errorf("failed to parse list arguments: %w", err)
-	}
-
-	// Validate query length
-	const maxQueryLength = 1000
-	if len(args.Query) > maxQueryLength {
-		return nil, fmt.Errorf("query too long (max %d characters)", maxQueryLength)
-	}
-
-	var results []ListToolResult
-	const maxResults = 100 // Limit results to prevent DoS
-	totalMatches := 0
-
-	// Get all remote tools
-	allRemoteTools := manager.GetAllTools()
-	for namespacedName, tool := range allRemoteTools {
-		// Check context cancellation
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
-		// Extract server ID from namespaced name (format: serverID__toolName)
-		before, _, ok := strings.Cut(namespacedName, "__")
-		serverID := "unknown"
-		if ok {
-			serverID = before
-		}
-
-		// Filter by server if specified
-		if args.Server != "" && !strings.EqualFold(serverID, args.Server) {
-			continue
-		}
-
-		// Filter by query keywords if specified
-		if !matchesKeywords(tool.Name, tool.Description, args.Query) {
-			continue
-		}
-
-		totalMatches++
-
-		if len(results) >= maxResults {
-			continue
-		}
-
-		// Convert InputSchema to map if possible
-		var inputSchema map[string]any
-		if tool.InputSchema != nil {
-			if schema, ok := tool.InputSchema.(map[string]any); ok {
-				inputSchema = schema
-			}
-		}
-
-		results = append(results, ListToolResult{
-			Name:        namespacedName,
-			Description: tool.Description,
-			Server:      serverID,
-			InputSchema: inputSchema,
-		})
-	}
-
-	// Sort results by name for consistent output
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Name < results[j].Name
-	})
-
-	// Build JavaScript function stubs output
-	var output strings.Builder
-	output.WriteString(fmt.Sprintf("// Total: %d tools", totalMatches))
-	if totalMatches > maxResults {
-		output.WriteString(fmt.Sprintf(" (showing first %d)", maxResults))
-	}
-	output.WriteString("\n\n")
-
-	for i, tool := range results {
-		if i > 0 {
-			output.WriteString("\n")
-		}
-		output.WriteString(schemaToJSDoc(tool.Name, tool.Description, tool.InputSchema))
-	}
-
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			&mcp.TextContent{
-				Text: output.String(),
-			},
-		},
-	}, nil
-}
-
-// matchesKeywords checks if tool matches any of the comma-separated keywords
-func matchesKeywords(name, description, query string) bool {
-	if query == "" {
-		return true // no filter, match all
-	}
-
-	nameLower := strings.ToLower(name)
-	descLower := strings.ToLower(description)
-
-	// Split by comma and match if ANY keyword appears in name or description
-	keywords := strings.Split(query, ",")
-	foundKeyword := false
-	for _, raw := range keywords {
-		kw := strings.TrimSpace(strings.ToLower(raw))
-		if kw == "" {
-			continue
-		}
-		foundKeyword = true
-		if strings.Contains(nameLower, kw) || strings.Contains(descLower, kw) {
-			return true
-		}
-	}
-
-	// If no non-empty keywords were provided, treat as no filter
-	if !foundKeyword {
-		return true
-	}
-
-	return false
 }

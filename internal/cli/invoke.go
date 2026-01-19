@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/vaayne/mcpx/internal/tools"
+
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	ucli "github.com/urfave/cli/v3"
 )
@@ -114,30 +116,27 @@ func runInvoke(ctx context.Context, cmd *ucli.Command) error {
 		}
 	}
 
-	var result *mcp.CallToolResult
+	// Create provider and mapper
+	var provider tools.ToolProvider
+	var mapper *ToolNameMapper
+	var cleanup func() error
 
 	if configPath != "" {
 		client, err := createConfigClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		cleanup = client.Close
+		provider = client
 
-		tools, err := client.ListTools(ctx)
+		toolList, err := client.ListTools(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to list tools: %w", err)
-		}
-		mapper, err := NewToolNameMapperWithCollisionCheck(tools)
-		if err != nil {
+			cleanup()
 			return err
 		}
-		originalName := mapper.ToOriginal(toolName)
-		if err := ensureNamespacedToolName(originalName); err != nil {
-			return err
-		}
-
-		result, err = client.CallTool(ctx, originalName, params)
+		mapper, err = NewToolNameMapperWithCollisionCheck(toolList)
 		if err != nil {
+			cleanup()
 			return err
 		}
 	} else if stdio {
@@ -145,37 +144,44 @@ func runInvoke(ctx context.Context, cmd *ucli.Command) error {
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		cleanup = client.Close
+		provider = client
 
-		tools, err := client.ListTools(ctx)
+		toolList, err := client.ListTools(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to list tools: %w", err)
-		}
-		mapper := NewToolNameMapper(tools)
-		originalName := mapper.ToOriginal(toolName)
-
-		result, err = client.CallTool(ctx, originalName, params)
-		if err != nil {
+			cleanup()
 			return err
 		}
+		mapper = NewToolNameMapper(toolList)
 	} else {
 		client, err := createRemoteClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		cleanup = client.Close
+		provider = client
 
-		tools, err := client.ListTools(ctx)
+		toolList, err := client.ListTools(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to list tools: %w", err)
-		}
-		mapper := NewToolNameMapper(tools)
-		originalName := mapper.ToOriginal(toolName)
-
-		result, err = client.CallTool(ctx, originalName, params)
-		if err != nil {
+			cleanup()
 			return err
 		}
+		mapper = NewToolNameMapper(toolList)
+	}
+	defer cleanup()
+
+	// Convert JS name to original name
+	originalName := mapper.ToOriginal(toolName)
+	if configPath != "" {
+		if err := ensureNamespacedToolName(originalName); err != nil {
+			return err
+		}
+	}
+
+	// Call shared core function
+	result, err := tools.InvokeTool(ctx, provider, originalName, params)
+	if err != nil {
+		return err
 	}
 
 	// Output
