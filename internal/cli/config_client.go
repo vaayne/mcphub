@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vaayne/mcpx/internal/config"
-	"github.com/vaayne/mcpx/internal/transport"
+	"github.com/vaayne/mcphub/internal/config"
+	"github.com/vaayne/mcphub/internal/transport"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )

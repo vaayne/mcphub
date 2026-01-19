@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/vaayne/mcpx/internal/config"
+	"github.com/vaayne/mcphub/internal/config"
 )
 
 // Factory creates appropriate transport based on server configuration

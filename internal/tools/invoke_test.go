@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vaayne/mcpx/internal/client"
-	"github.com/vaayne/mcpx/internal/logging"
+	"github.com/vaayne/mcphub/internal/client"
+	"github.com/vaayne/mcphub/internal/logging"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"

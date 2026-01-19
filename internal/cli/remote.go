@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/vaayne/mcpx/internal/logging"
+	"github.com/vaayne/mcphub/internal/logging"
 )
 
 // RemoteClientOpts contains options for creating a RemoteClient

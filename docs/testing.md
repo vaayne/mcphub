@@ -49,7 +49,7 @@ import (
     "time"
 
     "github.com/modelcontextprotocol/go-sdk/mcp"
-    "github.com/vaayne/mcpx/internal/testserver"
+    "github.com/vaayne/mcphub/internal/testserver"
 )
 
 func TestWithHTTPServer(t *testing.T) {
@@ -105,8 +105,8 @@ package mypackage
 import (
     "testing"
 
-    "github.com/vaayne/mcpx/internal/config"
-    "github.com/vaayne/mcpx/internal/testserver"
+    "github.com/vaayne/mcphub/internal/config"
+    "github.com/vaayne/mcphub/internal/testserver"
 )
 
 func TestWithStdioServer(t *testing.T) {
@@ -150,7 +150,7 @@ import (
     "context"
     "testing"
 
-    "github.com/vaayne/mcpx/internal/testserver"
+    "github.com/vaayne/mcphub/internal/testserver"
 )
 
 func TestCustomServer(t *testing.T) {

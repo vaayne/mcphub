@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/vaayne/mcpx/internal/client"
-	"github.com/vaayne/mcpx/internal/js"
+	"github.com/vaayne/mcphub/internal/client"
+	"github.com/vaayne/mcphub/internal/js"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )

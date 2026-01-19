@@ -5,7 +5,7 @@ import (
 	"maps"
 	"sync"
 
-	"github.com/vaayne/mcpx/internal/config"
+	"github.com/vaayne/mcphub/internal/config"
 )
 
 // BuiltinToolRegistry manages built-in tools

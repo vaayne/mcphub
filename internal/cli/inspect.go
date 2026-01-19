@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/vaayne/mcpx/internal/tools"
+	"github.com/vaayne/mcphub/internal/tools"
 
 	ucli "github.com/urfave/cli/v3"
 )

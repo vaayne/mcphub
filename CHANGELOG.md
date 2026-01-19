@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **BREAKING**: Migrated to standalone repository `github.com/vaayne/mcpx`
-- Go module path changed from `mcphub` to `github.com/vaayne/mcpx`
+- **BREAKING**: Migrated to standalone repository `github.com/vaayne/mcphub`
+- Go module path changed from `mcphub` to `github.com/vaayne/mcphub`
 - **BREAKING**: Project renamed from `mcp-hub-go` to `hub`
 - Go module path changed from `mcp-hub-go` to `hub`
 - Binary renamed from `mcp-hub-go` to `hub`
@@ -109,7 +109,7 @@ Initial release of MCP Hub Go.
 - TLS verification enabled by default
 - Owner-only file permissions (0600) for log files
 
-[Unreleased]: https://github.com/vaayne/mcpx/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/vaayne/mcphub/compare/v1.2.0...HEAD
 [1.2.0]: https://github.com/vaayne/cc-plugins/compare/hub/v1.1.0...hub/v1.2.0
 [1.1.0]: https://github.com/vaayne/cc-plugins/compare/hub/v1.0.0...hub/v1.1.0
 [1.0.0]: https://github.com/vaayne/cc-plugins/releases/tag/hub/v1.0.0

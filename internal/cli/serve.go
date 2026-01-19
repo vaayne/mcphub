@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/vaayne/mcpx/internal/config"
-	"github.com/vaayne/mcpx/internal/logging"
-	"github.com/vaayne/mcpx/internal/server"
+	"github.com/vaayne/mcphub/internal/config"
+	"github.com/vaayne/mcphub/internal/logging"
+	"github.com/vaayne/mcphub/internal/server"
 
 	ucli "github.com/urfave/cli/v3"
 )

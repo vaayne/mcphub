@@ -170,13 +170,13 @@ Log format:
 
 ```bash
 # Install latest version
-curl -fsSL https://raw.githubusercontent.com/vaayne/mcpx/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/vaayne/mcphub/main/scripts/install.sh | sh
 
 # Install specific version
-curl -fsSL https://raw.githubusercontent.com/vaayne/mcpx/main/scripts/install.sh | sh -s -- -v v1.0.0
+curl -fsSL https://raw.githubusercontent.com/vaayne/mcphub/main/scripts/install.sh | sh -s -- -v v1.0.0
 
 # Install to custom directory
-curl -fsSL https://raw.githubusercontent.com/vaayne/mcpx/main/scripts/install.sh | sh -s -- -d /usr/local/bin
+curl -fsSL https://raw.githubusercontent.com/vaayne/mcphub/main/scripts/install.sh | sh -s -- -d /usr/local/bin
 ```
 
 The script automatically:
@@ -188,7 +188,7 @@ The script automatically:
 
 ### Option 2: Download Binary
 
-Download the latest release from the [releases page](https://github.com/vaayne/mcpx/releases) and extract it to your PATH.
+Download the latest release from the [releases page](https://github.com/vaayne/mcphub/releases) and extract it to your PATH.
 
 Available platforms:
 
@@ -207,8 +207,8 @@ Requirements:
 
 ```bash
 # Clone the repository
-git clone https://github.com/vaayne/mcpx.git
-cd mcpx
+git clone https://github.com/vaayne/mcphub.git
+cd mcphub
 
 # Build with version info
 VERSION=v1.0.0
@@ -345,7 +345,7 @@ See [docs/js-authoring.md](docs/js-authoring.md) for JavaScript authoring guide.
 ### Project Structure
 
 ```
-mcpx/
+mcphub/
 ├── main.go              # Main entry point
 ├── internal/
 │   ├── client/              # Remote MCP client manager

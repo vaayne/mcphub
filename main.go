@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/vaayne/mcpx/internal/cli"
+	"github.com/vaayne/mcphub/internal/cli"
 
 	ucli "github.com/urfave/cli/v3"
 )

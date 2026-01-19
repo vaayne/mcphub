@@ -1,4 +1,4 @@
-module github.com/vaayne/mcpx
+module github.com/vaayne/mcphub
 
 go 1.25
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/vaayne/mcpx/internal/client"
+	"github.com/vaayne/mcphub/internal/client"
 )
 
 // ManagerAdapter adapts client.Manager to implement ToolProvider interface.

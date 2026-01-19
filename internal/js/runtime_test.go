@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vaayne/mcpx/internal/client"
-	"github.com/vaayne/mcpx/internal/logging"
+	"github.com/vaayne/mcphub/internal/client"
+	"github.com/vaayne/mcphub/internal/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

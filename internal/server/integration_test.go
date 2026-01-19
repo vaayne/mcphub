@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vaayne/mcpx/internal/client"
-	"github.com/vaayne/mcpx/internal/config"
-	"github.com/vaayne/mcpx/internal/js"
-	"github.com/vaayne/mcpx/internal/logging"
-	mcptesting "github.com/vaayne/mcpx/internal/testing"
-	"github.com/vaayne/mcpx/internal/tools"
+	"github.com/vaayne/mcphub/internal/client"
+	"github.com/vaayne/mcphub/internal/config"
+	"github.com/vaayne/mcphub/internal/js"
+	"github.com/vaayne/mcphub/internal/logging"
+	mcptesting "github.com/vaayne/mcphub/internal/testing"
+	"github.com/vaayne/mcphub/internal/tools"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"

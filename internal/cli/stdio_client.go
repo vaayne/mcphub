@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/vaayne/mcpx/internal/logging"
+	"github.com/vaayne/mcphub/internal/logging"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )

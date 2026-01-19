@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/vaayne/mcpx/internal/tools"
+	"github.com/vaayne/mcphub/internal/tools"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	ucli "github.com/urfave/cli/v3"

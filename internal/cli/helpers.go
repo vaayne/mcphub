@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/vaayne/mcpx/internal/logging"
+	"github.com/vaayne/mcphub/internal/logging"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	ucli "github.com/urfave/cli/v3"

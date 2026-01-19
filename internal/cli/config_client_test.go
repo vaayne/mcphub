@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/vaayne/mcpx/internal/logging"
+	"github.com/vaayne/mcphub/internal/logging"
 )
 
 func TestNewConfigClient_RequiresConfigPath(t *testing.T) {

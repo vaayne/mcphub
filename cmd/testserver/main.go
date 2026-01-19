@@ -15,7 +15,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/vaayne/mcpx/internal/testserver"
+	"github.com/vaayne/mcphub/internal/testserver"
 )
 
 func main() {

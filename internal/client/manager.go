@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/vaayne/mcpx/internal/config"
-	"github.com/vaayne/mcpx/internal/transport"
+	"github.com/vaayne/mcphub/internal/config"
+	"github.com/vaayne/mcphub/internal/transport"
 )
 
 // clientInfo holds information about a connected client

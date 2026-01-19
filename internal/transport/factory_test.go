@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/vaayne/mcpx/internal/config"
-	"github.com/vaayne/mcpx/internal/logging"
+	"github.com/vaayne/mcphub/internal/config"
+	"github.com/vaayne/mcphub/internal/logging"
 )
 
 func TestDefaultFactory_CreateTransport(t *testing.T) {
