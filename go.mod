@@ -1,8 +1,6 @@
 module github.com/vaayne/mcpx
 
-go 1.23.0
-
-toolchain go1.24.7
+go 1.25
 
 require (
 	github.com/dop251/goja v0.0.0-20251121114222-56b1242a5f86
