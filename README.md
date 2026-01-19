@@ -386,6 +386,8 @@ go test -cover ./...
 go test ./internal/js
 ```
 
+See [docs/testing.md](docs/testing.md) for comprehensive testing guide including the built-in test server.
+
 ### Running Locally
 
 ```bash
