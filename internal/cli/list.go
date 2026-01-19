@@ -8,14 +8,14 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/spf13/cobra"
+	ucli "github.com/urfave/cli/v3"
 )
 
 // ListCmd is the list subcommand that lists tools from an MCP service
-var ListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List tools from an MCP service",
-	Long: `List all available tools from an MCP service.
+var ListCmd = &ucli.Command{
+	Name:  "list",
+	Usage: "List tools from an MCP service",
+	Description: `List all available tools from an MCP service.
 
 Provide --url (-u) for a remote MCP service, --config (-c) to load local
 stdio/http/sse servers from config, or --stdio to spawn a subprocess.
@@ -35,17 +35,13 @@ Examples:
 
   # List tools from a stdio MCP server
   mh --stdio list -- npx @modelcontextprotocol/server-everything`,
-	RunE: runList,
+	Action: runList,
 }
 
-func init() {
-	ListCmd.Flags().StringP("config", "c", "", "path to configuration file")
-}
-
-func runList(cmd *cobra.Command, args []string) error {
-	url, _ := cmd.Flags().GetString("url")
-	configPath, _ := cmd.Flags().GetString("config")
-	stdio, _ := cmd.Flags().GetBool("stdio")
+func runList(ctx context.Context, cmd *ucli.Command) error {
+	url := cmd.String("url")
+	configPath := cmd.String("config")
+	stdio := cmd.Bool("stdio")
 
 	// Count how many modes are specified
 	modeCount := 0
@@ -66,9 +62,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("--url, --config, and --stdio are mutually exclusive")
 	}
 
-	jsonOutput, _ := cmd.Flags().GetBool("json")
-
-	ctx := context.Background()
+	jsonOutput := cmd.Bool("json")
 
 	var tools []*mcp.Tool
 	var mapper *ToolNameMapper

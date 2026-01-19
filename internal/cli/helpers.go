@@ -12,17 +12,17 @@ import (
 	"github.com/vaayne/mcpx/internal/logging"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/spf13/cobra"
+	ucli "github.com/urfave/cli/v3"
 )
 
 // createRemoteClient creates a RemoteClient from command flags
-func createRemoteClient(ctx context.Context, cmd *cobra.Command) (*RemoteClient, error) {
-	url, _ := cmd.Flags().GetString("url")
-	transport, _ := cmd.Flags().GetString("transport")
-	timeout, _ := cmd.Flags().GetInt("timeout")
-	headers, _ := cmd.Flags().GetStringArray("header")
-	verbose, _ := cmd.Flags().GetBool("verbose")
-	logFile, _ := cmd.Flags().GetString("log-file")
+func createRemoteClient(ctx context.Context, cmd *ucli.Command) (*RemoteClient, error) {
+	url := cmd.String("url")
+	transport := cmd.String("transport")
+	timeout := cmd.Int("timeout")
+	headers := cmd.StringSlice("header")
+	verbose := cmd.Bool("verbose")
+	logFile := cmd.String("log-file")
 
 	// Default to http for remote commands
 	if transport == "" {
@@ -47,16 +47,16 @@ func createRemoteClient(ctx context.Context, cmd *cobra.Command) (*RemoteClient,
 		ServerURL: url,
 		Transport: transport,
 		Headers:   parseHeaders(headers),
-		Timeout:   timeout,
+		Timeout:   int(timeout),
 		Logger:    logging.Logger,
 	}
 
 	return NewRemoteClient(ctx, opts)
 }
 
-func createConfigClient(ctx context.Context, cmd *cobra.Command) (*ConfigClient, error) {
-	configPath, _ := cmd.Flags().GetString("config")
-	timeout, _ := cmd.Flags().GetInt("timeout")
+func createConfigClient(ctx context.Context, cmd *ucli.Command) (*ConfigClient, error) {
+	configPath := cmd.String("config")
+	timeout := cmd.Int("timeout")
 	logger := getLogger(cmd)
 
 	return NewConfigClient(ctx, configPath, logger, time.Duration(timeout)*time.Second)
@@ -78,9 +78,9 @@ func parseHeaders(headers []string) map[string]string {
 }
 
 // getLogger returns a configured logger based on command flags
-func getLogger(cmd *cobra.Command) *slog.Logger {
-	verbose, _ := cmd.Flags().GetBool("verbose")
-	logFile, _ := cmd.Flags().GetString("log-file")
+func getLogger(cmd *ucli.Command) *slog.Logger {
+	verbose := cmd.Bool("verbose")
+	logFile := cmd.String("log-file")
 
 	logLevel := slog.LevelInfo
 	if verbose {
@@ -244,15 +244,15 @@ func filterArgsBeforeDash(args []string) []string {
 }
 
 // createStdioClientFromCmd creates a StdioClient using command flags and the stdio command from os.Args
-func createStdioClientFromCmd(ctx context.Context, cmd *cobra.Command) (*StdioClient, error) {
-	timeout, _ := cmd.Flags().GetInt("timeout")
-	verbose, _ := cmd.Flags().GetBool("verbose")
-	logFile, _ := cmd.Flags().GetString("log-file")
+func createStdioClientFromCmd(ctx context.Context, cmd *ucli.Command) (*StdioClient, error) {
+	timeout := cmd.Int("timeout")
+	verbose := cmd.Bool("verbose")
+	logFile := cmd.String("log-file")
 
 	stdioCmd, err := getStdioCommand()
 	if err != nil {
 		return nil, err
 	}
 
-	return createStdioClient(ctx, stdioCmd, timeout, verbose, logFile)
+	return createStdioClient(ctx, stdioCmd, int(timeout), verbose, logFile)
 }

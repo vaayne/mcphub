@@ -6,14 +6,15 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/spf13/cobra"
+	ucli "github.com/urfave/cli/v3"
 )
 
 // InspectCmd is the inspect subcommand that shows details of a specific tool
-var InspectCmd = &cobra.Command{
-	Use:   "inspect <tool-name>",
-	Short: "Inspect a tool from an MCP service",
-	Long: `Show detailed information about a specific tool from an MCP service.
+var InspectCmd = &ucli.Command{
+	Name:      "inspect",
+	Usage:     "Inspect a tool from an MCP service",
+	ArgsUsage: "<tool-name>",
+	Description: `Show detailed information about a specific tool from an MCP service.
 
 Provide --url (-u) for a remote MCP service, --config (-c) to load local
 stdio/http/sse servers from config, or --stdio to spawn a subprocess.
@@ -34,25 +35,20 @@ Examples:
 
   # Inspect a tool from a stdio MCP server
   mh --stdio inspect echo -- npx @modelcontextprotocol/server-everything`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		// Filter out args after "--" (used for stdio command)
-		filteredArgs := filterArgsBeforeDash(args)
-		if len(filteredArgs) != 1 {
-			return fmt.Errorf("accepts 1 arg(s), received %d", len(filteredArgs))
-		}
-		return nil
-	},
-	RunE: runInspect,
+	Action: runInspect,
 }
 
-func init() {
-	InspectCmd.Flags().StringP("config", "c", "", "path to configuration file")
-}
+func runInspect(ctx context.Context, cmd *ucli.Command) error {
+	// Filter out args after "--" (used for stdio command)
+	args := cmd.Args().Slice()
+	filteredArgs := filterArgsBeforeDash(args)
+	if len(filteredArgs) != 1 {
+		return fmt.Errorf("accepts 1 arg(s), received %d", len(filteredArgs))
+	}
 
-func runInspect(cmd *cobra.Command, args []string) error {
-	url, _ := cmd.Flags().GetString("url")
-	configPath, _ := cmd.Flags().GetString("config")
-	stdio, _ := cmd.Flags().GetBool("stdio")
+	url := cmd.String("url")
+	configPath := cmd.String("config")
+	stdio := cmd.Bool("stdio")
 
 	// Count how many modes are specified
 	modeCount := 0
@@ -73,12 +69,8 @@ func runInspect(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("--url, --config, and --stdio are mutually exclusive")
 	}
 
-	// Filter args to get only those before "--"
-	filteredArgs := filterArgsBeforeDash(args)
 	toolName := filteredArgs[0]
-	jsonOutput, _ := cmd.Flags().GetBool("json")
-
-	ctx := context.Background()
+	jsonOutput := cmd.Bool("json")
 
 	var tool *mcp.Tool
 	var mapper *ToolNameMapper

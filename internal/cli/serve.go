@@ -12,14 +12,14 @@ import (
 	"github.com/vaayne/mcpx/internal/logging"
 	"github.com/vaayne/mcpx/internal/server"
 
-	"github.com/spf13/cobra"
+	ucli "github.com/urfave/cli/v3"
 )
 
 // ServeCmd is the serve subcommand that starts the MCP hub server
-var ServeCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Start the MCP hub server",
-	Long: `Start the MCP hub server with the specified transport.
+var ServeCmd = &ucli.Command{
+	Name:  "serve",
+	Usage: "Start the MCP hub server",
+	Description: `Start the MCP hub server with the specified transport.
 
 Transport Types:
   stdio  - Standard input/output (default, for CLI integration)
@@ -38,32 +38,38 @@ Examples:
 
   # Run with verbose logging
   mh serve -c config.json -v`,
-	RunE: runServe,
-}
-
-func init() {
-	// Note: "config" flag is defined as a persistent flag on root command
-	// to support both "mh -c config.json" and "mh serve -c config.json"
-	ServeCmd.Flags().IntP("port", "p", 3000, "port for HTTP/SSE transport")
-	ServeCmd.Flags().String("host", "localhost", "host for HTTP/SSE transport")
+	Flags: []ucli.Flag{
+		&ucli.IntFlag{
+			Name:    "port",
+			Aliases: []string{"p"},
+			Usage:   "port for HTTP/SSE transport",
+			Value:   3000,
+		},
+		&ucli.StringFlag{
+			Name:  "host",
+			Usage: "host for HTTP/SSE transport",
+			Value: "localhost",
+		},
+	},
+	Action: runServe,
 }
 
 // RunServeFromRoot allows running serve command when invoked via root command with -c flag
-func RunServeFromRoot(cmd *cobra.Command, args []string) error {
-	return runServeWithCmd(cmd, args)
+func RunServeFromRoot(ctx context.Context, cmd *ucli.Command) error {
+	return runServeWithCmd(ctx, cmd)
 }
 
-func runServe(cmd *cobra.Command, args []string) error {
-	return runServeWithCmd(cmd, args)
+func runServe(ctx context.Context, cmd *ucli.Command) error {
+	return runServeWithCmd(ctx, cmd)
 }
 
-func runServeWithCmd(cmd *cobra.Command, args []string) error {
+func runServeWithCmd(ctx context.Context, cmd *ucli.Command) error {
 	// Get config flag - works for both persistent (from root) and local flags
-	configPath, _ := cmd.Flags().GetString("config")
+	configPath := cmd.String("config")
 
 	// Get local flags (only on serve command)
-	port, _ := cmd.Flags().GetInt("port")
-	host, _ := cmd.Flags().GetString("host")
+	port := cmd.Int("port")
+	host := cmd.String("host")
 	// Use defaults if not set (when called from root command)
 	if port == 0 {
 		port = 3000
@@ -73,9 +79,9 @@ func runServeWithCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get persistent flags from parent (root command)
-	transport, _ := cmd.Flags().GetString("transport")
-	verbose, _ := cmd.Flags().GetBool("verbose")
-	logFile, _ := cmd.Flags().GetString("log-file")
+	transport := cmd.String("transport")
+	verbose := cmd.Bool("verbose")
+	logFile := cmd.String("log-file")
 
 	// For serve command, default to stdio if transport wasn't explicitly set
 	// (parent default is empty string for subcommand-specific defaults)
@@ -151,11 +157,11 @@ func runServeWithCmd(cmd *cobra.Command, args []string) error {
 	transportCfg := server.TransportConfig{
 		Type: transport,
 		Host: host,
-		Port: port,
+		Port: int(port),
 	}
 
 	// Setup context with cancellation
-	ctx, cancel := context.WithCancel(context.Background())
+	runCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// Setup signal handling
@@ -165,7 +171,7 @@ func runServeWithCmd(cmd *cobra.Command, args []string) error {
 	// Start server in goroutine
 	errChan := make(chan error, 1)
 	go func() {
-		if err := srv.Start(ctx, transportCfg); err != nil {
+		if err := srv.Start(runCtx, transportCfg); err != nil {
 			errChan <- err
 		}
 	}()

@@ -9,14 +9,15 @@ import (
 	"os"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/spf13/cobra"
+	ucli "github.com/urfave/cli/v3"
 )
 
 // InvokeCmd is the invoke subcommand that invokes a tool on an MCP service
-var InvokeCmd = &cobra.Command{
-	Use:   "invoke <tool-name> [params-json | -]",
-	Short: "Invoke a tool on an MCP service",
-	Long: `Invoke a tool on an MCP service with optional JSON parameters.
+var InvokeCmd = &ucli.Command{
+	Name:      "invoke",
+	Usage:     "Invoke a tool on an MCP service",
+	ArgsUsage: "<tool-name> [params-json | -]",
+	Description: `Invoke a tool on an MCP service with optional JSON parameters.
 
 Provide --url (-u) for a remote MCP service, --config (-c) to load local
 stdio/http/sse servers from config, or --stdio to spawn a subprocess.
@@ -44,25 +45,20 @@ Examples:
 
   # Invoke a tool from a stdio MCP server
   mh --stdio invoke echo '{"message": "hello"}' -- npx @modelcontextprotocol/server-everything`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		// Filter out args after "--" (used for stdio command)
-		filteredArgs := filterArgsBeforeDash(args)
-		if len(filteredArgs) < 1 || len(filteredArgs) > 2 {
-			return fmt.Errorf("accepts between 1 and 2 arg(s), received %d", len(filteredArgs))
-		}
-		return nil
-	},
-	RunE: runInvoke,
+	Action: runInvoke,
 }
 
-func init() {
-	InvokeCmd.Flags().StringP("config", "c", "", "path to configuration file")
-}
+func runInvoke(ctx context.Context, cmd *ucli.Command) error {
+	// Filter out args after "--" (used for stdio command)
+	args := cmd.Args().Slice()
+	filteredArgs := filterArgsBeforeDash(args)
+	if len(filteredArgs) < 1 || len(filteredArgs) > 2 {
+		return fmt.Errorf("accepts between 1 and 2 arg(s), received %d", len(filteredArgs))
+	}
 
-func runInvoke(cmd *cobra.Command, args []string) error {
-	url, _ := cmd.Flags().GetString("url")
-	configPath, _ := cmd.Flags().GetString("config")
-	stdio, _ := cmd.Flags().GetBool("stdio")
+	url := cmd.String("url")
+	configPath := cmd.String("config")
+	stdio := cmd.Bool("stdio")
 
 	// Count how many modes are specified
 	modeCount := 0
@@ -83,10 +79,8 @@ func runInvoke(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("--url, --config, and --stdio are mutually exclusive")
 	}
 
-	// Filter args to get only those before "--"
-	filteredArgs := filterArgsBeforeDash(args)
 	toolName := filteredArgs[0]
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	jsonOutput := cmd.Bool("json")
 
 	// Parse parameters
 	var params json.RawMessage
@@ -119,8 +113,6 @@ func runInvoke(cmd *cobra.Command, args []string) error {
 			params = js
 		}
 	}
-
-	ctx := context.Background()
 
 	var result *mcp.CallToolResult
 

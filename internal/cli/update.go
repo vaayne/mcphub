@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,17 +14,17 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/spf13/cobra"
+	ucli "github.com/urfave/cli/v3"
 )
 
 // CurrentVersion is set from main.go
 var CurrentVersion string
 
 // UpdateCmd is the update subcommand that updates hub to the latest version
-var UpdateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Update mh to the latest version",
-	Long: `Check for updates and upgrade mh to the latest version.
+var UpdateCmd = &ucli.Command{
+	Name:  "update",
+	Usage: "Update mh to the latest version",
+	Description: `Check for updates and upgrade mh to the latest version.
 
 Examples:
   # Check and update to latest
@@ -31,11 +32,13 @@ Examples:
 
   # Check only (dry run)
   mh update --check`,
-	RunE: runUpdate,
-}
-
-func init() {
-	UpdateCmd.Flags().Bool("check", false, "only check for updates, don't install")
+	Flags: []ucli.Flag{
+		&ucli.BoolFlag{
+			Name:  "check",
+			Usage: "only check for updates, don't install",
+		},
+	},
+	Action: runUpdate,
 }
 
 type ghRelease struct {
@@ -47,8 +50,8 @@ type ghRelease struct {
 	} `json:"assets"`
 }
 
-func runUpdate(cmd *cobra.Command, args []string) error {
-	checkOnly, _ := cmd.Flags().GetBool("check")
+func runUpdate(ctx context.Context, cmd *ucli.Command) error {
+	checkOnly := cmd.Bool("check")
 
 	// Fetch all releases and filter by name containing "Hub"
 	latest, err := getLatestHubRelease()

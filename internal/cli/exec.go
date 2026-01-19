@@ -12,14 +12,15 @@ import (
 	"github.com/vaayne/mcpx/internal/tools"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/spf13/cobra"
+	ucli "github.com/urfave/cli/v3"
 )
 
 // ExecCmd is the exec subcommand that executes JavaScript code against MCP tools
-var ExecCmd = &cobra.Command{
-	Use:   "exec <code | ->",
-	Short: "Execute JavaScript code to orchestrate multiple MCP tool calls",
-	Long: `Execute JavaScript code that can call multiple MCP tools with logic.
+var ExecCmd = &ucli.Command{
+	Name:      "exec",
+	Usage:     "Execute JavaScript code to orchestrate multiple MCP tool calls",
+	ArgsUsage: "<code | ->",
+	Description: `Execute JavaScript code that can call multiple MCP tools with logic.
 
 Use this when you need to:
 - Chain multiple tool calls
@@ -48,18 +49,7 @@ Examples:
 
   # JSON output
   mh -c config.json exec --json 'mcp.callTool("github__listRepos", {})'`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		filteredArgs := filterArgsBeforeDash(args)
-		if len(filteredArgs) != 1 {
-			return fmt.Errorf("accepts 1 arg (code or -), received %d", len(filteredArgs))
-		}
-		return nil
-	},
-	RunE: runExec,
-}
-
-func init() {
-	ExecCmd.Flags().StringP("config", "c", "", "path to configuration file")
+	Action: runExec,
 }
 
 // cliToolCaller adapts CLI clients to js.ToolCaller interface
@@ -100,10 +90,17 @@ func (c *cliToolCaller) CallTool(ctx context.Context, serverID, toolName string,
 	return c.callFn(ctx, fullName, paramsJSON)
 }
 
-func runExec(cmd *cobra.Command, args []string) error {
-	url, _ := cmd.Flags().GetString("url")
-	configPath, _ := cmd.Flags().GetString("config")
-	stdio, _ := cmd.Flags().GetBool("stdio")
+func runExec(ctx context.Context, cmd *ucli.Command) error {
+	// Filter out args after "--" (used for stdio command)
+	args := cmd.Args().Slice()
+	filteredArgs := filterArgsBeforeDash(args)
+	if len(filteredArgs) != 1 {
+		return fmt.Errorf("accepts 1 arg (code or -), received %d", len(filteredArgs))
+	}
+
+	url := cmd.String("url")
+	configPath := cmd.String("config")
+	stdio := cmd.Bool("stdio")
 
 	// Count how many modes are specified
 	modeCount := 0
@@ -125,7 +122,6 @@ func runExec(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get code from args or stdin
-	filteredArgs := filterArgsBeforeDash(args)
 	codeArg := filteredArgs[0]
 
 	var code string
@@ -150,8 +146,7 @@ func runExec(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("code is required")
 	}
 
-	jsonOutput, _ := cmd.Flags().GetBool("json")
-	ctx := context.Background()
+	jsonOutput := cmd.Bool("json")
 
 	var caller js.ToolCaller
 	var cleanup func() error
@@ -163,11 +158,11 @@ func runExec(cmd *cobra.Command, args []string) error {
 		}
 		cleanup = client.Close
 
-		tools, err := client.ListTools(ctx)
+		mcpTools, err := client.ListTools(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to list tools: %w", err)
 		}
-		mapper, err := NewToolNameMapperWithCollisionCheck(tools)
+		mapper, err := NewToolNameMapperWithCollisionCheck(mcpTools)
 		if err != nil {
 			return err
 		}
@@ -183,11 +178,11 @@ func runExec(cmd *cobra.Command, args []string) error {
 		}
 		cleanup = client.Close
 
-		tools, err := client.ListTools(ctx)
+		mcpTools, err := client.ListTools(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to list tools: %w", err)
 		}
-		mapper := NewToolNameMapper(tools)
+		mapper := NewToolNameMapper(mcpTools)
 
 		caller = &cliToolCaller{
 			callFn:        client.CallTool,
@@ -201,11 +196,11 @@ func runExec(cmd *cobra.Command, args []string) error {
 		}
 		cleanup = client.Close
 
-		tools, err := client.ListTools(ctx)
+		mcpTools, err := client.ListTools(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to list tools: %w", err)
 		}
-		mapper := NewToolNameMapper(tools)
+		mapper := NewToolNameMapper(mcpTools)
 
 		caller = &cliToolCaller{
 			callFn:        client.CallTool,
