@@ -22,6 +22,24 @@ func main() {
 	// Set version for update command
 	cli.CurrentVersion = version
 
+	// Custom version printer to match our format
+	ucli.VersionPrinter = func(cmd *ucli.Command) {
+		if cmd.Root().Bool("json") {
+			info := map[string]string{
+				"version": version,
+				"commit":  commit,
+				"built":   date,
+			}
+			enc := json.NewEncoder(os.Stdout)
+			enc.SetIndent("", "  ")
+			_ = enc.Encode(info)
+			return
+		}
+		fmt.Printf("mh %s\n", version)
+		fmt.Printf("  commit: %s\n", commit)
+		fmt.Printf("  built:  %s\n", date)
+	}
+
 	app := &ucli.Command{
 		Name:    "mh",
 		Usage:   "MCP Hub - Go implementation of Model Context Protocol hub",
@@ -82,27 +100,6 @@ with remote MCP services.`,
 			cli.InvokeCmd,
 			cli.ExecCmd,
 			cli.UpdateCmd,
-			{
-				Name:    "version",
-				Aliases: []string{"v"},
-				Usage:   "Print version information",
-				Action: func(ctx context.Context, cmd *ucli.Command) error {
-					if cmd.Root().Bool("json") {
-						info := map[string]string{
-							"version": version,
-							"commit":  commit,
-							"built":   date,
-						}
-						enc := json.NewEncoder(os.Stdout)
-						enc.SetIndent("", "  ")
-						return enc.Encode(info)
-					}
-					fmt.Printf("mh %s\n", version)
-					fmt.Printf("  commit: %s\n", commit)
-					fmt.Printf("  built:  %s\n", date)
-					return nil
-				},
-			},
 		},
 	}
 
