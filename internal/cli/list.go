@@ -173,21 +173,9 @@ func runList(ctx context.Context, cmd *ucli.Command) error {
 			if strings.TrimSpace(desc) == "" {
 				desc = tool.Name
 			}
-			fmt.Printf("- %s: %s\n", tool.Name, truncateDescription(desc, 50))
+			fmt.Printf("- %s: %s\n", tool.Name, tools.TruncateDescription(desc, 50))
 		}
 	}
 
 	return nil
-}
-
-// truncateDescription truncates a description to a maximum number of words
-func truncateDescription(s string, maxWords int) string {
-	if maxWords <= 0 {
-		return ""
-	}
-	words := strings.Fields(s)
-	if len(words) <= maxWords {
-		return strings.Join(words, " ")
-	}
-	return strings.Join(words[:maxWords], " ") + "…"
 }

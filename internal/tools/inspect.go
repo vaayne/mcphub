@@ -82,6 +82,11 @@ func InspectTool(ctx context.Context, provider ToolProvider, name string, mapper
 	}, nil
 }
 
+// FormatInspectResultAsJSDoc formats the inspect result as a JSDoc function stub
+func FormatInspectResultAsJSDoc(result *InspectResult) string {
+	return schemaToJSDoc(result.Name, result.Description, result.InputSchema)
+}
+
 // HandleInspectTool handles the inspect tool call (MCP server handler)
 func HandleInspectTool(ctx context.Context, provider ToolProvider, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Parse arguments
@@ -120,16 +125,13 @@ func HandleInspectTool(ctx context.Context, provider ToolProvider, req *mcp.Call
 		return nil, err
 	}
 
-	// Marshal to JSON
-	jsonBytes, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal inspect result: %w", err)
-	}
+	// Format as JSDoc function stub
+	output := FormatInspectResultAsJSDoc(result)
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{
-				Text: string(jsonBytes),
+				Text: output,
 			},
 		},
 	}, nil

@@ -155,21 +155,8 @@ func runInspect(ctx context.Context, cmd *ucli.Command) error {
 		}
 		fmt.Println(string(output))
 	} else {
-		// Text output: pretty-print tool schema
-		fmt.Printf("Name: %s\n", result.Name)
-		fmt.Printf("Description: %s\n", result.Description)
-
-		if result.InputSchema != nil {
-			fmt.Println("\nInput Schema:")
-			schemaJSON, err := json.MarshalIndent(result.InputSchema, "  ", "  ")
-			if err != nil {
-				fmt.Printf("  (error formatting schema: %v)\n", err)
-			} else {
-				fmt.Printf("  %s\n", string(schemaJSON))
-			}
-		} else {
-			fmt.Println("\nInput Schema: (none)")
-		}
+		// Text output: JSDoc function stub (can be used in exec)
+		fmt.Print(tools.FormatInspectResultAsJSDoc(result))
 	}
 
 	return nil

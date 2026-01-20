@@ -40,8 +40,8 @@ func TestHandleListTool_NoResults(t *testing.T) {
 	textContent, ok := result.Content[0].(*mcp.TextContent)
 	require.True(t, ok)
 
-	// Output is now plain text with JS stubs, not JSON
-	assert.Contains(t, textContent.Text, "// Total: 0 tools")
+	// Output is now simple text format
+	assert.Contains(t, textContent.Text, "No tools available")
 }
 
 func TestHandleListTool_NoArgs(t *testing.T) {
@@ -64,8 +64,8 @@ func TestHandleListTool_NoArgs(t *testing.T) {
 	textContent, ok := result.Content[0].(*mcp.TextContent)
 	require.True(t, ok)
 
-	// Output is now plain text with JS stubs, not JSON
-	assert.Contains(t, textContent.Text, "// Total: 0 tools")
+	// Output is now simple text format
+	assert.Contains(t, textContent.Text, "No tools available")
 }
 
 func TestHandleListTool_InvalidJSON(t *testing.T) {

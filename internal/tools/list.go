@@ -146,8 +146,8 @@ func HandleListTool(ctx context.Context, provider ToolProvider, req *mcp.CallToo
 	// Format result with JS names
 	formatted := FormatListResult(result, mapper)
 
-	// Build JavaScript function stubs output for MCP
-	output := FormatListResultAsJSDoc(formatted, result.Total)
+	// Build simple text output (same as CLI)
+	output := FormatListResultAsText(formatted, result.Total)
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
@@ -158,23 +158,42 @@ func HandleListTool(ctx context.Context, provider ToolProvider, req *mcp.CallToo
 	}, nil
 }
 
-// FormatListResultAsJSDoc formats the list result as JSDoc function stubs
-func FormatListResultAsJSDoc(tools []ListToolResult, total int) string {
+// FormatListResultAsText formats the list result as simple text (name: description)
+func FormatListResultAsText(tools []ListToolResult, total int) string {
 	var output strings.Builder
-	output.WriteString(fmt.Sprintf("// Total: %d tools", total))
+
+	if len(tools) == 0 {
+		output.WriteString("No tools available")
+		return output.String()
+	}
+
+	output.WriteString(fmt.Sprintf("Total: %d tools", total))
 	if total > len(tools) {
 		output.WriteString(fmt.Sprintf(" (showing first %d)", len(tools)))
 	}
 	output.WriteString("\n\n")
 
-	for i, tool := range tools {
-		if i > 0 {
-			output.WriteString("\n")
+	for _, tool := range tools {
+		desc := tool.Description
+		if strings.TrimSpace(desc) == "" {
+			desc = tool.Name
 		}
-		output.WriteString(schemaToJSDoc(tool.Name, tool.Description, tool.InputSchema))
+		output.WriteString(fmt.Sprintf("- %s: %s\n", tool.Name, TruncateDescription(desc, 50)))
 	}
 
-	return output.String()
+	return strings.TrimSuffix(output.String(), "\n")
+}
+
+// TruncateDescription truncates a description to a maximum number of words
+func TruncateDescription(s string, maxWords int) string {
+	if maxWords <= 0 {
+		return ""
+	}
+	words := strings.Fields(s)
+	if len(words) <= maxWords {
+		return strings.Join(words, " ")
+	}
+	return strings.Join(words[:maxWords], " ") + "…"
 }
 
 // matchesKeywords checks if tool matches any of the comma-separated keywords
@@ -206,91 +225,4 @@ func matchesKeywords(name, description, query string) bool {
 	}
 
 	return false
-}
-
-// jsonSchemaTypeToJS converts JSON Schema types to JavaScript types for JSDoc
-func jsonSchemaTypeToJS(schemaType any) string {
-	switch t := schemaType.(type) {
-	case string:
-		switch t {
-		case "string":
-			return "string"
-		case "number", "integer":
-			return "number"
-		case "boolean":
-			return "boolean"
-		case "array":
-			return "Array"
-		case "object":
-			return "Object"
-		default:
-			return "*"
-		}
-	default:
-		return "*"
-	}
-}
-
-// schemaToJSDoc generates a JSDoc comment and function stub from a tool's schema
-func schemaToJSDoc(toolName, description string, inputSchema map[string]any) string {
-	var sb strings.Builder
-
-	sb.WriteString("/**\n")
-
-	// Use tool name as fallback if description is empty
-	if description == "" {
-		description = toolName
-	}
-	sb.WriteString(fmt.Sprintf(" * %s\n", description))
-
-	// Extract properties from schema
-	if inputSchema != nil {
-		if props, ok := inputSchema["properties"].(map[string]any); ok && len(props) > 0 {
-			sb.WriteString(" * @param {Object} params - Parameters\n")
-
-			// Sort property names for consistent output
-			propNames := make([]string, 0, len(props))
-			for name := range props {
-				propNames = append(propNames, name)
-			}
-			sort.Strings(propNames)
-
-			for _, propName := range propNames {
-				propDef := props[propName]
-				propMap, ok := propDef.(map[string]any)
-				if !ok {
-					continue
-				}
-
-				jsType := jsonSchemaTypeToJS(propMap["type"])
-				propDesc := ""
-				if d, ok := propMap["description"].(string); ok {
-					propDesc = d
-				}
-
-				// Handle enum values
-				if enum, ok := propMap["enum"].([]any); ok && len(enum) > 0 {
-					enumStrs := make([]string, 0, len(enum))
-					for _, e := range enum {
-						enumStrs = append(enumStrs, fmt.Sprintf("%v", e))
-					}
-					if propDesc != "" {
-						propDesc += " "
-					}
-					propDesc += fmt.Sprintf("(one of: %s)", strings.Join(enumStrs, ", "))
-				}
-
-				if propDesc == "" {
-					sb.WriteString(fmt.Sprintf(" * @param {%s} params.%s\n", jsType, propName))
-				} else {
-					sb.WriteString(fmt.Sprintf(" * @param {%s} params.%s - %s\n", jsType, propName, propDesc))
-				}
-			}
-		}
-	}
-
-	sb.WriteString(" */\n")
-	sb.WriteString(fmt.Sprintf("function %s(params) {}\n", toolName))
-
-	return sb.String()
 }
