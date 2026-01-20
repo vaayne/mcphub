@@ -16,8 +16,8 @@ var ListDescription string
 
 // ListOptions contains options for listing tools
 type ListOptions struct {
-	Server           string // Optional: filter by server name
-	Query            string // Optional: comma-separated keywords for search
+	Server            string // Optional: filter by server name
+	Query             string // Optional: comma-separated keywords for search
 	IncludeUnprefixed bool   // If true, include tools without server prefix (for direct server connections)
 }
 
