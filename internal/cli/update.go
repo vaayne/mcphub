@@ -88,7 +88,7 @@ func runUpdate(ctx context.Context, cmd *ucli.Command) error {
 	if runtime.GOOS == "windows" {
 		ext = "zip"
 	}
-	assetName := fmt.Sprintf("hub_%s_%s_%s.%s", latestVersion, runtime.GOOS, runtime.GOARCH, ext)
+	assetName := fmt.Sprintf("mh_%s_%s_%s.%s", latestVersion, runtime.GOOS, runtime.GOARCH, ext)
 
 	var downloadURL string
 	for _, a := range latest.Assets {
@@ -113,7 +113,7 @@ func runUpdate(ctx context.Context, cmd *ucli.Command) error {
 }
 
 func getLatestHubRelease() (*ghRelease, error) {
-	resp, err := http.Get("https://api.github.com/repos/vaayne/cc-plugins/releases")
+	resp, err := http.Get("https://api.github.com/repos/vaayne/mcphub/releases/latest")
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch releases: %w", err)
 	}
@@ -123,19 +123,12 @@ func getLatestHubRelease() (*ghRelease, error) {
 		return nil, fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
 	}
 
-	var releases []ghRelease
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-		return nil, fmt.Errorf("failed to parse releases: %w", err)
+	var release ghRelease
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return nil, fmt.Errorf("failed to parse release: %w", err)
 	}
 
-	// Find latest release with name starting with "Hub"
-	for _, r := range releases {
-		if strings.HasPrefix(r.Name, "Hub ") {
-			return &r, nil
-		}
-	}
-
-	return nil, nil
+	return &release, nil
 }
 
 // isNewerVersion returns true if latest is newer than current
@@ -186,9 +179,9 @@ func downloadAndReplace(url, ext string) error {
 
 	// Extract binary
 	var binaryData []byte
-	binaryName := "hub"
+	binaryName := "mh"
 	if runtime.GOOS == "windows" {
-		binaryName = "hub.exe"
+		binaryName = "mh.exe"
 	}
 
 	if ext == "zip" {
