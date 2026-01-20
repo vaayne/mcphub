@@ -38,6 +38,66 @@ func TestHandleListTool_NoTools(t *testing.T) {
 	assert.Contains(t, textContent.Text, "No tools available")
 }
 
+// TestListTools_FiltersOutBuiltinTools verifies that non-namespaced tools (builtins) are filtered out
+func TestListTools_FiltersOutBuiltinTools(t *testing.T) {
+	// Create a mock provider that returns both namespaced and non-namespaced tools
+	provider := &mockToolProvider{
+		tools: []*mcp.Tool{
+			{Name: "list", Description: "List all tools"},                      // builtin - should be filtered
+			{Name: "inspect", Description: "Inspect a tool"},                   // builtin - should be filtered
+			{Name: "invoke", Description: "Invoke a tool"},                     // builtin - should be filtered
+			{Name: "exec", Description: "Execute JS code"},                     // builtin - should be filtered
+			{Name: "github__search", Description: "Search GitHub"},             // namespaced - should be included
+			{Name: "exa__web_search", Description: "Search the web"},           // namespaced - should be included
+			{Name: "context7__query_docs", Description: "Query Context7 docs"}, // namespaced - should be included
+		},
+	}
+
+	result, err := ListTools(context.Background(), provider, ListOptions{})
+	require.NoError(t, err)
+
+	// Should only include the 3 namespaced tools, not the 4 builtins
+	assert.Equal(t, 3, result.Total)
+	assert.Len(t, result.Tools, 3)
+
+	// Verify the tools are the namespaced ones
+	toolNames := make([]string, len(result.Tools))
+	for i, tool := range result.Tools {
+		toolNames[i] = tool.Name
+	}
+	assert.Contains(t, toolNames, "context7__query_docs")
+	assert.Contains(t, toolNames, "exa__web_search")
+	assert.Contains(t, toolNames, "github__search")
+
+	// Verify builtin tools are not included
+	assert.NotContains(t, toolNames, "list")
+	assert.NotContains(t, toolNames, "inspect")
+	assert.NotContains(t, toolNames, "invoke")
+	assert.NotContains(t, toolNames, "exec")
+}
+
+// mockToolProvider is a simple mock for testing
+type mockToolProvider struct {
+	tools []*mcp.Tool
+}
+
+func (m *mockToolProvider) ListTools(ctx context.Context) ([]*mcp.Tool, error) {
+	return m.tools, nil
+}
+
+func (m *mockToolProvider) GetTool(ctx context.Context, name string) (*mcp.Tool, error) {
+	for _, tool := range m.tools {
+		if tool.Name == name {
+			return tool, nil
+		}
+	}
+	return nil, nil
+}
+
+func (m *mockToolProvider) CallTool(ctx context.Context, name string, params json.RawMessage) (*mcp.CallToolResult, error) {
+	return nil, nil
+}
+
 // Keyword matching helpers
 func TestMatchesKeywords(t *testing.T) {
 	tests := []struct {

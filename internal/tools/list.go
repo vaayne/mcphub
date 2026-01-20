@@ -62,7 +62,12 @@ func ListTools(ctx context.Context, provider ToolProvider, opts ListOptions) (*L
 		}
 
 		// Extract server ID from namespaced name (format: serverID__toolName)
-		serverID, _, _ := toolname.ParseNamespacedName(tool.Name)
+		serverID, _, isNamespaced := toolname.ParseNamespacedName(tool.Name)
+
+		// Skip builtin tools (not namespaced) - they are not backend server tools
+		if !isNamespaced {
+			continue
+		}
 
 		// Filter by server if specified
 		if opts.Server != "" && !strings.EqualFold(serverID, opts.Server) {

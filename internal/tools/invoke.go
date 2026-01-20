@@ -52,13 +52,33 @@ func InvokeTool(ctx context.Context, provider ToolProvider, name string, params 
 
 // HandleInvokeTool handles the invoke tool call (MCP server handler)
 func HandleInvokeTool(ctx context.Context, provider ToolProvider, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// Parse arguments
-	var args struct {
-		Name   string         `json:"name"`
-		Params map[string]any `json:"params,omitempty"`
+	// Parse arguments - handle both object and string params
+	var rawArgs struct {
+		Name   string          `json:"name"`
+		Params json.RawMessage `json:"params,omitempty"`
 	}
-	if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
+	if err := json.Unmarshal(req.Params.Arguments, &rawArgs); err != nil {
 		return nil, fmt.Errorf("failed to parse invoke arguments: %w", err)
+	}
+
+	// Parse params - could be object, string, or omitted
+	var args struct {
+		Name   string
+		Params map[string]any
+	}
+	args.Name = rawArgs.Name
+
+	if len(rawArgs.Params) > 0 {
+		// First try to unmarshal as object
+		if err := json.Unmarshal(rawArgs.Params, &args.Params); err != nil {
+			// If that fails, try to unmarshal as string then parse that string as JSON
+			var paramsStr string
+			if err := json.Unmarshal(rawArgs.Params, &paramsStr); err == nil && paramsStr != "" {
+				if err := json.Unmarshal([]byte(paramsStr), &args.Params); err != nil {
+					return nil, fmt.Errorf("failed to parse params string as JSON: %w", err)
+				}
+			}
+		}
 	}
 
 	// Validate name first
