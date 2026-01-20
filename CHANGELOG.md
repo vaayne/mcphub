@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-01-20
+
+### Fixed
+
+- Filter builtin tools from list output and handle string params in invoke
+
+### Changed
+
+- Simplified MCP tool descriptions for better token efficiency
+- Unified tool name handling across MCP server and CLI
+- Aligned CLI and MCP server output formats for list/inspect commands
+
 ## [0.1.0] - 2026-01-19
 
 Initial release of MCP Hub.
@@ -48,5 +60,6 @@ Initial release of MCP Hub.
 - **Automatic reconnection**: Exponential backoff for failed server connections
 - **Multi-platform releases**: linux/darwin/windows × amd64/arm64
 
-[Unreleased]: https://github.com/vaayne/mcphub/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/vaayne/mcphub/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/vaayne/mcphub/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/vaayne/mcphub/releases/tag/v0.1.0
