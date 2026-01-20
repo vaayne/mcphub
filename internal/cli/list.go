@@ -113,9 +113,13 @@ func runList(ctx context.Context, cmd *ucli.Command) error {
 	defer cleanup()
 
 	// Call shared core function
+	// For stdio and remote modes, tools are not namespaced (direct from server)
+	// For config mode, tools are namespaced with serverID__
+	includeUnprefixed := stdio || url != ""
 	result, err := tools.ListTools(ctx, provider, tools.ListOptions{
-		Server: serverFilter,
-		Query:  queryFilter,
+		Server:            serverFilter,
+		Query:             queryFilter,
+		IncludeUnprefixed: includeUnprefixed,
 	})
 	if err != nil {
 		return err

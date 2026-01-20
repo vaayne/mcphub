@@ -16,8 +16,9 @@ var ListDescription string
 
 // ListOptions contains options for listing tools
 type ListOptions struct {
-	Server string // Optional: filter by server name
-	Query  string // Optional: comma-separated keywords for search
+	Server           string // Optional: filter by server name
+	Query            string // Optional: comma-separated keywords for search
+	IncludeUnprefixed bool   // If true, include tools without server prefix (for direct server connections)
 }
 
 // ListToolResult represents a tool in the list result
@@ -64,13 +65,14 @@ func ListTools(ctx context.Context, provider ToolProvider, opts ListOptions) (*L
 		// Extract server ID from namespaced name (format: serverID__toolName)
 		serverID, _, isNamespaced := toolname.ParseNamespacedName(tool.Name)
 
-		// Skip builtin tools (not namespaced) - they are not backend server tools
-		if !isNamespaced {
+		// Skip non-namespaced tools unless IncludeUnprefixed is set
+		// (for direct server connections, tools don't have the server prefix)
+		if !isNamespaced && !opts.IncludeUnprefixed {
 			continue
 		}
 
-		// Filter by server if specified
-		if opts.Server != "" && !strings.EqualFold(serverID, opts.Server) {
+		// Filter by server if specified (only applies to namespaced tools)
+		if opts.Server != "" && isNamespaced && !strings.EqualFold(serverID, opts.Server) {
 			continue
 		}
 

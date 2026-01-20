@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -64,9 +65,8 @@ with remote MCP services.`,
 				Usage: "output as JSON",
 			},
 			&ucli.BoolFlag{
-				Name:    "verbose",
-				Aliases: []string{"v"},
-				Usage:   "verbose logging",
+				Name:  "verbose",
+				Usage: "verbose logging",
 			},
 			&ucli.StringFlag{
 				Name:  "log-file",
@@ -83,9 +83,20 @@ with remote MCP services.`,
 			cli.ExecCmd,
 			cli.UpdateCmd,
 			{
-				Name:  "version",
-				Usage: "Print version information",
+				Name:    "version",
+				Aliases: []string{"v"},
+				Usage:   "Print version information",
 				Action: func(ctx context.Context, cmd *ucli.Command) error {
+					if cmd.Root().Bool("json") {
+						info := map[string]string{
+							"version": version,
+							"commit":  commit,
+							"built":   date,
+						}
+						enc := json.NewEncoder(os.Stdout)
+						enc.SetIndent("", "  ")
+						return enc.Encode(info)
+					}
 					fmt.Printf("mh %s\n", version)
 					fmt.Printf("  commit: %s\n", commit)
 					fmt.Printf("  built:  %s\n", date)
