@@ -43,6 +43,7 @@ Server and CLI modes share connection logic in `internal/cli/` (config_client, r
 ## Architecture Overview
 
 **Server mode flow:**
+
 1. Load and validate config → `internal/config/`
 2. Connect to each MCP server (stdio subprocess or http/sse client) → `internal/client/` + `internal/transport/`
 3. Discover tools from each server, namespace them (camelCase: `serverNameToolName`)
@@ -50,6 +51,7 @@ Server and CLI modes share connection logic in `internal/cli/` (config_client, r
 5. Route incoming tool calls to appropriate backend, return results
 
 **CLI mode flow:**
+
 1. Parse connection source (config/url/stdio) → `internal/cli/helpers.go`
 2. Create appropriate client → `internal/cli/{config_client,remote,stdio_client}.go`
 3. Execute command (list/inspect/invoke) using `internal/tools/` core functions

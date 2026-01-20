@@ -73,11 +73,13 @@ The config file is straightforward JSON. Each server gets a name and connection 
 ```
 
 **Transport types:**
+
 - `stdio` (default) - runs a local command
 - `http` - connects to a remote HTTP endpoint
 - `sse` - Server-Sent Events for streaming servers
 
 **Other options:**
+
 - `enable: false` - disable a server without removing it
 - `required: true` - fail startup if this server can't connect
 - `timeout` - connection timeout in seconds (http/sse only)
@@ -127,7 +129,10 @@ The hub includes a few tools of its own:
 
 ```javascript
 const repos = mcp.callTool("githubSearchRepos", { query: "mcp" });
-const readme = mcp.callTool("githubGetFile", { repo: repos[0].name, path: "README.md" });
+const readme = mcp.callTool("githubGetFile", {
+  repo: repos[0].name,
+  path: "README.md",
+});
 readme;
 ```
 
@@ -174,6 +179,7 @@ mh -c config.json list          # Preview aggregated tools
 ```
 
 The generated skill file contains:
+
 - Service URL and transport type
 - List of available tools with descriptions
 - Commands for `mh list`, `mh inspect`, `mh invoke`

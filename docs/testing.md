@@ -27,11 +27,11 @@ The `internal/testserver` package provides a simple MCP server for automated tes
 
 ### Available Test Tools
 
-| Tool | Input | Output | Purpose |
-|------|-------|--------|---------|
-| `echo` | `{message: string}` | Returns the message | Basic roundtrip testing |
-| `add` | `{a: number, b: number}` | Returns `a + b` | Parameter validation |
-| `fail` | `{message?: string}` | Always returns error | Error handling tests |
+| Tool   | Input                    | Output               | Purpose                 |
+| ------ | ------------------------ | -------------------- | ----------------------- |
+| `echo` | `{message: string}`      | Returns the message  | Basic roundtrip testing |
+| `add`  | `{a: number, b: number}` | Returns `a + b`      | Parameter validation    |
+| `fail` | `{message?: string}`     | Always returns error | Error handling tests    |
 
 ### Usage in Tests
 
@@ -288,6 +288,7 @@ addr, err := srv.RunHTTP(ctx, "127.0.0.1:0")
 ### Test Timeouts
 
 If tests hang, ensure you're:
+
 - Setting context timeouts
 - Calling `cancel()` on context
 - Closing sessions with `session.Close()`
@@ -295,6 +296,7 @@ If tests hang, ensure you're:
 ### Flaky Tests
 
 For flaky tests:
+
 - Increase timeouts for slow CI environments
 - Use `t.Parallel()` carefully with shared resources
 - Ensure proper cleanup between tests

@@ -27,32 +27,36 @@ Use `inspect` first to get tool signatures, then write JS code using `mcp.callTo
 ## Examples
 
 Single call:
+
 ```javascript
-mcp.callTool("webSearchExa", {query: "MCP protocol"})
+mcp.callTool("webSearchExa", { query: "MCP protocol" });
 ```
 
 Chain calls:
+
 ```javascript
-const user = mcp.callTool("dbGetUser", {id: 123});
-mcp.callTool("emailSend", {to: user.email, subject: "Hello"});
+const user = mcp.callTool("dbGetUser", { id: 123 });
+mcp.callTool("emailSend", { to: user.email, subject: "Hello" });
 ```
 
 Batch with error handling:
+
 ```javascript
 const ids = [1, 2, 3];
 ids.map(id => {
   try {
-    return {id, ok: true, data: mcp.callTool("dbGetUser", {id})};
+    return { id, ok: true, data: mcp.callTool("dbGetUser", { id }) };
   } catch (e) {
-    return {id, ok: false, error: e.message};
+    return { id, ok: false, error: e.message };
   }
 });
 ```
 
 Async pattern:
+
 ```javascript
 (async () => {
-  const users = await mcp.callTool("dbListUsers", {limit: 10});
+  const users = await mcp.callTool("dbListUsers", { limit: 10 });
   return users.filter(u => u.active);
 })();
 ```
