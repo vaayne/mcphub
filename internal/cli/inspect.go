@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/vaayne/mcphub/internal/toolname"
 	"github.com/vaayne/mcphub/internal/tools"
 
 	ucli "github.com/urfave/cli/v3"
@@ -21,18 +22,22 @@ Provide --url (-u) for a remote MCP service, --config (-c) to load local
 stdio/http/sse servers from config, or --stdio to spawn a subprocess.
 Takes tool name as a required positional argument.
 
+Tool names can be in either format:
+  - JS name (camelCase): githubSearchRepos
+  - Original name: github__search_repos
+
 Examples:
   # Inspect a tool
-  mh -u http://localhost:3000 inspect my-tool
+  mh -u http://localhost:3000 inspect myTool
 
   # Inspect a tool with JSON output
-  mh -u http://localhost:3000 inspect my-tool --json
+  mh -u http://localhost:3000 inspect myTool --json
 
   # Inspect a tool using SSE transport
-  mh -u http://localhost:3000 -t sse inspect my-tool
+  mh -u http://localhost:3000 -t sse inspect myTool
 
   # Inspect a tool from config (stdio/http/sse)
-  mh -c config.json inspect github__search_repos
+  mh -c config.json inspect githubSearchRepos
 
   # Inspect a tool from a stdio MCP server
   mh --stdio inspect echo -- npx @modelcontextprotocol/server-everything`,
@@ -73,9 +78,8 @@ func runInspect(ctx context.Context, cmd *ucli.Command) error {
 	toolName := filteredArgs[0]
 	jsonOutput := cmd.Bool("json")
 
-	// Create provider and mapper
+	// Create provider
 	var provider tools.ToolProvider
-	var mapper *ToolNameMapper
 	var cleanup func() error
 
 	if configPath != "" {
@@ -85,17 +89,6 @@ func runInspect(ctx context.Context, cmd *ucli.Command) error {
 		}
 		cleanup = client.Close
 		provider = client
-
-		toolList, err := client.ListTools(ctx)
-		if err != nil {
-			cleanup()
-			return err
-		}
-		mapper, err = NewToolNameMapperWithCollisionCheck(toolList)
-		if err != nil {
-			cleanup()
-			return err
-		}
 	} else if stdio {
 		client, err := createStdioClientFromCmd(ctx, cmd)
 		if err != nil {
@@ -103,13 +96,6 @@ func runInspect(ctx context.Context, cmd *ucli.Command) error {
 		}
 		cleanup = client.Close
 		provider = client
-
-		toolList, err := client.ListTools(ctx)
-		if err != nil {
-			cleanup()
-			return err
-		}
-		mapper = NewToolNameMapper(toolList)
 	} else {
 		client, err := createRemoteClient(ctx, cmd)
 		if err != nil {
@@ -117,18 +103,37 @@ func runInspect(ctx context.Context, cmd *ucli.Command) error {
 		}
 		cleanup = client.Close
 		provider = client
-
-		toolList, err := client.ListTools(ctx)
-		if err != nil {
-			cleanup()
-			return err
-		}
-		mapper = NewToolNameMapper(toolList)
 	}
 	defer cleanup()
 
-	// Convert JS name to original name
-	originalName := mapper.ToOriginal(toolName)
+	// Get all tools to build mapper for name resolution
+	toolList, err := provider.ListTools(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list tools: %w", err)
+	}
+
+	// Build mapper (with collision check for config mode)
+	var mapper *toolname.Mapper
+	if configPath != "" {
+		mapper, err = toolname.NewMapperWithCollisionCheck(toolList)
+		if err != nil {
+			return err
+		}
+	} else {
+		mapper = toolname.NewMapper(toolList)
+	}
+
+	// Resolve tool name (accepts both JS name and original name)
+	originalName, found := mapper.Resolve(toolName)
+	if !found {
+		// If not found in mapper but looks like a namespaced name, use it directly
+		if !toolname.IsNamespaced(toolName) {
+			return fmt.Errorf("tool '%s' not found", toolName)
+		}
+		originalName = toolName
+	}
+
+	// For config mode, ensure the resolved name is namespaced
 	if configPath != "" {
 		if err := ensureNamespacedToolName(originalName); err != nil {
 			return err
@@ -136,34 +141,22 @@ func runInspect(ctx context.Context, cmd *ucli.Command) error {
 	}
 
 	// Call shared core function
-	result, err := tools.InspectTool(ctx, provider, originalName)
+	result, err := tools.InspectTool(ctx, provider, originalName, mapper)
 	if err != nil {
 		return err
 	}
 
-	// Get JS name for display
-	jsName := mapper.ToJSName(result.Name)
-
 	// Output
 	if jsonOutput {
-		// JSON output: full tool object with JS name
-		type toolOutput struct {
-			Name        string `json:"name"`
-			Description string `json:"description"`
-			InputSchema any    `json:"inputSchema,omitempty"`
-		}
-		output, err := json.MarshalIndent(toolOutput{
-			Name:        jsName,
-			Description: result.Description,
-			InputSchema: result.InputSchema,
-		}, "", "  ")
+		// JSON output: full tool object with JS name (same as MCP tool)
+		output, err := json.MarshalIndent(result, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal JSON: %w", err)
 		}
 		fmt.Println(string(output))
 	} else {
 		// Text output: pretty-print tool schema
-		fmt.Printf("Name: %s\n", jsName)
+		fmt.Printf("Name: %s\n", result.Name)
 		fmt.Printf("Description: %s\n", result.Description)
 
 		if result.InputSchema != nil {

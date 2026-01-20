@@ -75,13 +75,13 @@ func (a *ManagerAdapter) CallTool(ctx context.Context, name string, params json.
 	}
 
 	// Parse namespaced name
-	separatorIndex := strings.Index(name, "__")
-	if separatorIndex == -1 {
+	before, after, ok := strings.Cut(name, "__")
+	if !ok {
 		return nil, fmt.Errorf("tool name must be namespaced (serverID__toolName)")
 	}
 
-	serverID := name[:separatorIndex]
-	toolName := name[separatorIndex+2:]
+	serverID := before
+	toolName := after
 
 	if serverID == "" {
 		return nil, fmt.Errorf("server ID cannot be empty")

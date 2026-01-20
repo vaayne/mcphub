@@ -10,7 +10,8 @@ Write JavaScript code to call multiple MCP tools in a single request. Use loops,
 - **Async**: Async/await, Promises, and timers (`setTimeout`, `setInterval`, `setImmediate`) are supported.
 - **Require**: `require()` works for core goja_nodejs modules like `node:buffer`, `node:process`, `node:url`, `node:util`, and the built-in `console`.
 - **MCP helpers**:
-  - `mcp.callTool("toolName", params)` → calls any MCP tool; throws on failure. Use `serverID__toolName` format for multi-server config mode.
+  - `mcp.callTool("toolName", params)` → calls any MCP tool; throws on failure.
+  - Tool names can be **JS name (camelCase)** like `githubSearchRepos` or **original** like `github__search_repos`.
   - `mcp.log(level, message, fields?)` or `console.*` → captured in `logs`.
 - **No browser APIs**: `window`, `document`, `page`, `fetch`, etc. are not provided; get data via MCP tools.
 
@@ -19,7 +20,7 @@ Write JavaScript code to call multiple MCP tools in a single request. Use loops,
 - Async IIFE:
   ```javascript
   (async () => {
-    const users = await mcp.callTool("db__listUsers", { limit: 50 });
+    const users = await mcp.callTool("dbListUsers", { limit: 50 });
     return users.filter(u => u.active);
   })();
   ```
@@ -28,7 +29,7 @@ Write JavaScript code to call multiple MCP tools in a single request. Use loops,
   const ids = [1, 2, 3];
   ids.map(id => {
     try {
-      return { id, ok: true, data: mcp.callTool("db__getUser", { id }) };
+      return { id, ok: true, data: mcp.callTool("dbGetUser", { id }) };
     } catch (e) {
       return { id, ok: false, error: e.message };
     }

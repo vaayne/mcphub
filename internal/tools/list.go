@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vaayne/mcphub/internal/toolname"
 )
 
 //go:embed list_description.md
@@ -30,8 +31,8 @@ type ListToolResult struct {
 
 // ListResult represents the result of listing tools
 type ListResult struct {
-	Tools []ListToolResult `json:"tools"`
-	Total int              `json:"total"`
+	Tools []*mcp.Tool `json:"-"` // Internal: original tools
+	Total int         `json:"total"`
 }
 
 // ListTools is the shared core function for listing tools.
@@ -49,7 +50,7 @@ func ListTools(ctx context.Context, provider ToolProvider, opts ListOptions) (*L
 		return nil, fmt.Errorf("failed to list tools: %w", err)
 	}
 
-	var results []ListToolResult
+	var results []*mcp.Tool
 	const maxResults = 100 // Limit results to prevent DoS
 	totalMatches := 0
 
@@ -62,10 +63,7 @@ func ListTools(ctx context.Context, provider ToolProvider, opts ListOptions) (*L
 		}
 
 		// Extract server ID from namespaced name (format: serverID__toolName)
-		serverID := ""
-		if before, _, ok := strings.Cut(tool.Name, "__"); ok {
-			serverID = before
-		}
+		serverID, _, _ := toolname.ParseNamespacedName(tool.Name)
 
 		// Filter by server if specified
 		if opts.Server != "" && !strings.EqualFold(serverID, opts.Server) {
@@ -83,20 +81,7 @@ func ListTools(ctx context.Context, provider ToolProvider, opts ListOptions) (*L
 			continue
 		}
 
-		// Convert InputSchema to map if possible
-		var inputSchema map[string]any
-		if tool.InputSchema != nil {
-			if schema, ok := tool.InputSchema.(map[string]any); ok {
-				inputSchema = schema
-			}
-		}
-
-		results = append(results, ListToolResult{
-			Name:        tool.Name,
-			Description: tool.Description,
-			Server:      serverID,
-			InputSchema: inputSchema,
-		})
+		results = append(results, tool)
 	}
 
 	// Sort results by name for consistent output
@@ -108,6 +93,31 @@ func ListTools(ctx context.Context, provider ToolProvider, opts ListOptions) (*L
 		Tools: results,
 		Total: totalMatches,
 	}, nil
+}
+
+// FormatListResult formats the list result with JS names for output.
+// Used by both CLI and MCP server handlers for consistent output.
+func FormatListResult(result *ListResult, mapper *toolname.Mapper) []ListToolResult {
+	formatted := make([]ListToolResult, 0, len(result.Tools))
+	for _, tool := range result.Tools {
+		serverID, _, _ := toolname.ParseNamespacedName(tool.Name)
+
+		// Convert InputSchema to map if possible
+		var inputSchema map[string]any
+		if tool.InputSchema != nil {
+			if schema, ok := tool.InputSchema.(map[string]any); ok {
+				inputSchema = schema
+			}
+		}
+
+		formatted = append(formatted, ListToolResult{
+			Name:        mapper.ToJSName(tool.Name),
+			Description: tool.Description,
+			Server:      serverID,
+			InputSchema: inputSchema,
+		})
+	}
+	return formatted
 }
 
 // HandleListTool handles the list tool call (MCP server handler)
@@ -130,8 +140,14 @@ func HandleListTool(ctx context.Context, provider ToolProvider, req *mcp.CallToo
 		return nil, err
 	}
 
+	// Create mapper for name conversion
+	mapper := toolname.NewMapper(result.Tools)
+
+	// Format result with JS names
+	formatted := FormatListResult(result, mapper)
+
 	// Build JavaScript function stubs output for MCP
-	output := FormatListResultAsJSDoc(result)
+	output := FormatListResultAsJSDoc(formatted, result.Total)
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
@@ -143,15 +159,15 @@ func HandleListTool(ctx context.Context, provider ToolProvider, req *mcp.CallToo
 }
 
 // FormatListResultAsJSDoc formats the list result as JSDoc function stubs
-func FormatListResultAsJSDoc(result *ListResult) string {
+func FormatListResultAsJSDoc(tools []ListToolResult, total int) string {
 	var output strings.Builder
-	output.WriteString(fmt.Sprintf("// Total: %d tools", result.Total))
-	if result.Total > len(result.Tools) {
-		output.WriteString(fmt.Sprintf(" (showing first %d)", len(result.Tools)))
+	output.WriteString(fmt.Sprintf("// Total: %d tools", total))
+	if total > len(tools) {
+		output.WriteString(fmt.Sprintf(" (showing first %d)", len(tools)))
 	}
 	output.WriteString("\n\n")
 
-	for i, tool := range result.Tools {
+	for i, tool := range tools {
 		if i > 0 {
 			output.WriteString("\n")
 		}

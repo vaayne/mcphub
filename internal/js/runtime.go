@@ -18,6 +18,7 @@ import (
 	_ "github.com/dop251/goja_nodejs/url"
 	_ "github.com/dop251/goja_nodejs/util"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vaayne/mcphub/internal/toolname"
 )
 
 const (
@@ -63,11 +64,14 @@ type ToolCaller interface {
 	// CallTool calls a tool with the given serverID, toolName, and parameters
 	// For single-server clients, serverID can be ignored or used as a default
 	CallTool(ctx context.Context, serverID, toolName string, params map[string]any) (*mcp.CallToolResult, error)
+	// ListTools returns all available tools (used for name resolution)
+	ListTools(ctx context.Context) ([]*mcp.Tool, error)
 }
 
 // SessionGetter abstracts getting a client session by server ID (implemented by client.Manager)
 type SessionGetter interface {
 	GetClient(serverID string) (*mcp.ClientSession, error)
+	GetAllTools() map[string]*mcp.Tool
 }
 
 // ManagerCaller adapts a SessionGetter (like client.Manager) to the ToolCaller interface
@@ -93,6 +97,20 @@ func (m *ManagerCaller) CallTool(ctx context.Context, serverID, toolName string,
 	}
 
 	return session.CallTool(ctx, toolParams)
+}
+
+// ListTools implements ToolCaller for ManagerCaller
+func (m *ManagerCaller) ListTools(ctx context.Context) ([]*mcp.Tool, error) {
+	allTools := m.getter.GetAllTools()
+	tools := make([]*mcp.Tool, 0, len(allTools))
+	for namespacedName, tool := range allTools {
+		tools = append(tools, &mcp.Tool{
+			Name:        namespacedName,
+			Description: tool.Description,
+			InputSchema: tool.InputSchema,
+		})
+	}
+	return tools, nil
 }
 
 // Runtime represents a JavaScript runtime for executing tool scripts
@@ -143,6 +161,15 @@ func (r *Runtime) Execute(ctx context.Context, script string) (any, []LogEntry, 
 	execCtx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
+	// Build tool name mapper for name resolution
+	var mapper *toolname.Mapper
+	if r.caller != nil {
+		tools, err := r.caller.ListTools(execCtx)
+		if err == nil && len(tools) > 0 {
+			mapper = toolname.NewMapper(tools)
+		}
+	}
+
 	// Execute script with a Node-like event loop
 	loop := eventloop.NewEventLoop()
 	loop.Start()
@@ -171,7 +198,7 @@ func (r *Runtime) Execute(ctx context.Context, script string) (any, []LogEntry, 
 		vmPtr = vm
 		close(vmReady)
 
-		if err := r.injectMCPHelpers(execCtx, vm, &logs, &logsMu); err != nil {
+		if err := r.injectMCPHelpers(execCtx, vm, &logs, &logsMu, mapper); err != nil {
 			runErr = err
 			signalReady()
 			return
@@ -282,12 +309,15 @@ func (r *Runtime) Execute(ctx context.Context, script string) (any, []LogEntry, 
 }
 
 // injectMCPHelpers wires mcp helpers and console log capture into the VM
-func (r *Runtime) injectMCPHelpers(ctx context.Context, vm *goja.Runtime, logs *[]LogEntry, logsMu *sync.Mutex) error {
+func (r *Runtime) injectMCPHelpers(ctx context.Context, vm *goja.Runtime, logs *[]LogEntry, logsMu *sync.Mutex, mapper *toolname.Mapper) error {
 	// Store logs
 	// Setup mcp helpers
 	mcpObj := vm.NewObject()
 
-	// mcp.callTool(toolName, params) - toolName format: "serverID__toolName" or just "toolName" for single-server mode
+	// mcp.callTool(toolName, params) - toolName can be:
+	// - JS name: "serverIdToolName" (camelCase)
+	// - Original name: "serverID__toolName"
+	// - Single-server mode: "toolName"
 	if err := mcpObj.Set("callTool", func(call goja.FunctionCall) goja.Value {
 		// Check context cancellation
 		select {
@@ -297,21 +327,31 @@ func (r *Runtime) injectMCPHelpers(ctx context.Context, vm *goja.Runtime, logs *
 		}
 
 		if len(call.Arguments) != 2 {
-			panic(vm.NewTypeError("mcp.callTool requires 2 arguments: toolName (e.g., 'server__tool'), params"))
+			panic(vm.NewTypeError("mcp.callTool requires 2 arguments: toolName (e.g., 'serverTool' or 'server__tool'), params"))
 		}
 
-		fullToolName := call.Argument(0).String()
+		inputName := call.Argument(0).String()
 		params := call.Argument(1).Export()
 
-		// Parse serverID__toolName format, or use tool name directly for single-server mode
+		// Resolve tool name using mapper
 		var serverID, toolName string
-		if before, after, ok := strings.Cut(fullToolName, "__"); ok {
-			serverID = before
-			toolName = after
+		resolvedName := inputName
+
+		// Try to resolve using mapper first
+		if mapper != nil {
+			if original, found := mapper.Resolve(inputName); found {
+				resolvedName = original
+			}
+		}
+
+		// Parse the resolved name
+		if s, t, ok := toolname.ParseNamespacedName(resolvedName); ok {
+			serverID = s
+			toolName = t
 		} else {
 			// Single-server mode: use tool name directly with empty serverID
 			serverID = ""
-			toolName = fullToolName
+			toolName = resolvedName
 		}
 
 		// Call the tool

@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/vaayne/mcphub/internal/js"
+	"github.com/vaayne/mcphub/internal/toolname"
 	"github.com/vaayne/mcphub/internal/tools"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -31,12 +32,13 @@ Use this when you need to:
 For single tool calls, use 'invoke' instead.
 
 The 'mcp.callTool(name, params)' function is available to call tools.
-For --url or --stdio mode, use the tool name directly (e.g., 'searchRepos').
-For --config mode with multiple servers, use 'serverID__toolName' format.
+Tool names can be in either format:
+  - JS name (camelCase): githubSearchRepos
+  - Original name: github__search_repos
 
 Examples:
   # Chain tool calls (config mode)
-  mh -c config.json exec 'const user = mcp.callTool("db__getUser", {id: 1}); mcp.callTool("email__send", {to: user.email})'
+  mh -c config.json exec 'const user = mcp.callTool("dbGetUser", {id: 1}); mcp.callTool("emailSend", {to: user.email})'
 
   # Read code from stdin
   cat script.js | mh -c config.json exec -
@@ -48,17 +50,18 @@ Examples:
   mh --stdio exec 'mcp.callTool("echo", {message: "hello"})' -- npx @modelcontextprotocol/server-everything
 
   # JSON output
-  mh -c config.json exec --json 'mcp.callTool("github__listRepos", {})'`,
+  mh -c config.json exec --json 'mcp.callTool("githubListRepos", {})'`,
 	Action: runExec,
 }
 
 // cliToolCaller adapts CLI clients to js.ToolCaller interface
 type cliToolCaller struct {
 	callFn func(ctx context.Context, name string, params json.RawMessage) (*mcp.CallToolResult, error)
+	listFn func(ctx context.Context) ([]*mcp.Tool, error)
 	// defaultServer is used for --url and --stdio modes where there's only one server
 	defaultServer string
 	// mapper converts JS names back to original tool names
-	mapper *ToolNameMapper
+	mapper *toolname.Mapper
 }
 
 func (c *cliToolCaller) CallTool(ctx context.Context, serverID, toolName string, params map[string]any) (*mcp.CallToolResult, error) {
@@ -88,6 +91,11 @@ func (c *cliToolCaller) CallTool(ctx context.Context, serverID, toolName string,
 	}
 
 	return c.callFn(ctx, fullName, paramsJSON)
+}
+
+// ListTools implements js.ToolCaller interface
+func (c *cliToolCaller) ListTools(ctx context.Context) ([]*mcp.Tool, error) {
+	return c.listFn(ctx)
 }
 
 func runExec(ctx context.Context, cmd *ucli.Command) error {
@@ -162,13 +170,14 @@ func runExec(ctx context.Context, cmd *ucli.Command) error {
 		if err != nil {
 			return fmt.Errorf("failed to list tools: %w", err)
 		}
-		mapper, err := NewToolNameMapperWithCollisionCheck(mcpTools)
+		mapper, err := toolname.NewMapperWithCollisionCheck(mcpTools)
 		if err != nil {
 			return err
 		}
 
 		caller = &cliToolCaller{
 			callFn: client.CallTool,
+			listFn: client.ListTools,
 			mapper: mapper,
 		}
 	} else if stdio {
@@ -182,10 +191,11 @@ func runExec(ctx context.Context, cmd *ucli.Command) error {
 		if err != nil {
 			return fmt.Errorf("failed to list tools: %w", err)
 		}
-		mapper := NewToolNameMapper(mcpTools)
+		mapper := toolname.NewMapper(mcpTools)
 
 		caller = &cliToolCaller{
 			callFn:        client.CallTool,
+			listFn:        client.ListTools,
 			defaultServer: "default",
 			mapper:        mapper,
 		}
@@ -200,10 +210,11 @@ func runExec(ctx context.Context, cmd *ucli.Command) error {
 		if err != nil {
 			return fmt.Errorf("failed to list tools: %w", err)
 		}
-		mapper := NewToolNameMapper(mcpTools)
+		mapper := toolname.NewMapper(mcpTools)
 
 		caller = &cliToolCaller{
 			callFn:        client.CallTool,
+			listFn:        client.ListTools,
 			defaultServer: "default",
 			mapper:        mapper,
 		}

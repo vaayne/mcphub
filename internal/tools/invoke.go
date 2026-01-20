@@ -5,9 +5,9 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vaayne/mcphub/internal/toolname"
 )
 
 //go:embed invoke_description.md
@@ -15,7 +15,8 @@ var InvokeDescription string
 
 // InvokeTool is the shared core function for invoking a tool.
 // Used by both CLI and MCP server handlers.
-func InvokeTool(ctx context.Context, provider ToolProvider, name string, params json.RawMessage) (*mcp.CallToolResult, error) {
+// The name parameter can be either JS name (camelCase) or original name (serverID__toolName).
+func InvokeTool(ctx context.Context, provider ToolProvider, name string, params json.RawMessage, mapper *toolname.Mapper) (*mcp.CallToolResult, error) {
 	// Validate name
 	if name == "" {
 		return nil, fmt.Errorf("name is required")
@@ -34,8 +35,14 @@ func InvokeTool(ctx context.Context, provider ToolProvider, name string, params 
 	default:
 	}
 
+	// Resolve name to original format using mapper if provided
+	originalName := name
+	if mapper != nil {
+		originalName = mapper.ToOriginal(name)
+	}
+
 	// Call the tool
-	result, err := provider.CallTool(ctx, name, params)
+	result, err := provider.CallTool(ctx, originalName, params)
 	if err != nil {
 		return nil, err
 	}
@@ -59,9 +66,21 @@ func HandleInvokeTool(ctx context.Context, provider ToolProvider, req *mcp.CallT
 		return nil, fmt.Errorf("name is required")
 	}
 
-	// Enforce namespaced format for MCP handler (serverID__toolName)
-	if !strings.Contains(args.Name, "__") {
-		return nil, fmt.Errorf("tool name must be namespaced (serverID__toolName)")
+	// Get all tools to build mapper for name resolution
+	tools, err := provider.ListTools(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tools: %w", err)
+	}
+	mapper := toolname.NewMapper(tools)
+
+	// Resolve tool name (accepts both JS name and original name)
+	originalName, found := mapper.Resolve(args.Name)
+	if !found {
+		// If not found in mapper, check if it's a valid namespaced name
+		if !toolname.IsNamespaced(args.Name) {
+			return nil, fmt.Errorf("tool '%s' not found", args.Name)
+		}
+		originalName = args.Name
 	}
 
 	// Convert params to JSON
@@ -75,5 +94,5 @@ func HandleInvokeTool(ctx context.Context, provider ToolProvider, req *mcp.CallT
 	}
 
 	// Call shared core function
-	return InvokeTool(ctx, provider, args.Name, paramsJSON)
+	return InvokeTool(ctx, provider, originalName, paramsJSON, mapper)
 }

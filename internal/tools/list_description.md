@@ -34,7 +34,8 @@ Combine filters:
 
 ## Output Format
 
-The output is JavaScript function stubs with JSDoc comments. Use the namespaced tool name (`serverID__toolName`) with `mcp.callTool(...)`:
+The output is JavaScript function stubs with JSDoc comments. Tool names are in **camelCase** format.
+Use these names with `mcp.callTool(...)` in `exec`:
 
 ```javascript
 // Total: 2 tools
@@ -44,12 +45,18 @@ The output is JavaScript function stubs with JSDoc comments. Use the namespaced 
  * @param {Object} params - Parameters
  * @param {string} params.path - Directory path to list
  */
-function filesystem__list_directory(params) {}
+function filesystemListDirectory(params) {}
 
 /**
  * Read file contents
  * @param {Object} params - Parameters
  * @param {string} params.path - File path to read
  */
-function filesystem__read_file(params) {}
+function filesystemReadFile(params) {}
+```
+
+In `exec`, call these tools like:
+```javascript
+mcp.callTool("filesystemListDirectory", { path: "/tmp" });
+mcp.callTool("filesystemReadFile", { path: "/tmp/file.txt" });
 ```

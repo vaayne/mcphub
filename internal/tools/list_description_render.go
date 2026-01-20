@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vaayne/mcphub/internal/toolname"
 )
 
 const availableToolsPlaceholder = "{{AVAILABLE_TOOLS}}"
@@ -32,23 +33,41 @@ func renderAvailableToolsLines(remoteTools map[string]*mcp.Tool) []string {
 		return []string{"- (none)"}
 	}
 
-	toolNames := make([]string, 0, len(remoteTools))
-	for name := range remoteTools {
-		toolNames = append(toolNames, name)
+	// Build mapper for name conversion
+	tools := make([]*mcp.Tool, 0, len(remoteTools))
+	for name, tool := range remoteTools {
+		tools = append(tools, &mcp.Tool{
+			Name:        name,
+			Description: tool.Description,
+			InputSchema: tool.InputSchema,
+		})
 	}
-	sort.Strings(toolNames)
+	mapper := toolname.NewMapper(tools)
 
-	lines := make([]string, 0, len(toolNames))
-	for _, name := range toolNames {
-		tool := remoteTools[name]
+	// Sort by JS name for consistent output
+	type toolEntry struct {
+		jsName string
+		desc   string
+	}
+	entries := make([]toolEntry, 0, len(remoteTools))
+	for name, tool := range remoteTools {
+		jsName := mapper.ToJSName(name)
 		desc := ""
 		if tool != nil {
 			desc = tool.Description
 		}
 		if strings.TrimSpace(desc) == "" {
-			desc = name
+			desc = jsName
 		}
-		lines = append(lines, "- "+name+": "+truncateWords(desc, 50))
+		entries = append(entries, toolEntry{jsName: jsName, desc: desc})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].jsName < entries[j].jsName
+	})
+
+	lines := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		lines = append(lines, "- "+entry.jsName+": "+truncateWords(entry.desc, 50))
 	}
 	return lines
 }

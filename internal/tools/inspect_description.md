@@ -10,19 +10,21 @@ Use this tool when you need detailed information about a single tool, including 
 
 ## Usage
 
-Provide the namespaced tool name in `serverID__toolName` format:
+Provide the tool name in either format:
+- **JS name (camelCase)**: `githubSearchRepos`
+- **Original name**: `github__search_repos`
 
 ```json
-{ "name": "github__search_repos" }
+{ "name": "githubSearchRepos" }
 ```
 
 ## Output Format
 
-Returns JSON with full tool details:
+Returns JSON with full tool details (names are in camelCase format):
 
 ```json
 {
-  "name": "github__search_repos",
+  "name": "githubSearchRepos",
   "description": "Search GitHub repositories",
   "server": "github",
   "inputSchema": {

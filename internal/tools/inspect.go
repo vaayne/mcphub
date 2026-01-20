@@ -5,9 +5,9 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vaayne/mcphub/internal/toolname"
 )
 
 //go:embed inspect_description.md
@@ -23,7 +23,8 @@ type InspectResult struct {
 
 // InspectTool is the shared core function for inspecting a tool.
 // Used by both CLI and MCP server handlers.
-func InspectTool(ctx context.Context, provider ToolProvider, name string) (*InspectResult, error) {
+// The name parameter can be either JS name (camelCase) or original name (serverID__toolName).
+func InspectTool(ctx context.Context, provider ToolProvider, name string, mapper *toolname.Mapper) (*InspectResult, error) {
 	// Validate name
 	if name == "" {
 		return nil, fmt.Errorf("name is required")
@@ -42,17 +43,20 @@ func InspectTool(ctx context.Context, provider ToolProvider, name string) (*Insp
 	default:
 	}
 
+	// Resolve name to original format using mapper if provided
+	originalName := name
+	if mapper != nil {
+		originalName = mapper.ToOriginal(name)
+	}
+
 	// Look up the tool
-	tool, err := provider.GetTool(ctx, name)
+	tool, err := provider.GetTool(ctx, originalName)
 	if err != nil {
 		return nil, err
 	}
 
 	// Extract server ID from namespaced name (format: serverID__toolName)
-	serverID := ""
-	if before, _, ok := strings.Cut(name, "__"); ok {
-		serverID = before
-	}
+	serverID, _, _ := toolname.ParseNamespacedName(originalName)
 
 	// Convert InputSchema to map if possible
 	var inputSchema map[string]any
@@ -62,8 +66,16 @@ func InspectTool(ctx context.Context, provider ToolProvider, name string) (*Insp
 		}
 	}
 
+	// Return result with JS name
+	jsName := originalName
+	if mapper != nil {
+		jsName = mapper.ToJSName(originalName)
+	} else {
+		jsName = toolname.ToJSName(originalName)
+	}
+
 	return &InspectResult{
-		Name:        tool.Name,
+		Name:        jsName,
 		Description: tool.Description,
 		Server:      serverID,
 		InputSchema: inputSchema,
@@ -85,13 +97,25 @@ func HandleInspectTool(ctx context.Context, provider ToolProvider, req *mcp.Call
 		return nil, fmt.Errorf("name is required")
 	}
 
-	// Enforce namespaced format for MCP handler (serverID__toolName)
-	if !strings.Contains(args.Name, "__") {
-		return nil, fmt.Errorf("tool name must be namespaced (serverID__toolName)")
+	// Get all tools to build mapper for name resolution
+	tools, err := provider.ListTools(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tools: %w", err)
+	}
+	mapper := toolname.NewMapper(tools)
+
+	// Resolve tool name (accepts both JS name and original name)
+	originalName, found := mapper.Resolve(args.Name)
+	if !found {
+		// If not found in mapper, check if it's a valid namespaced name
+		if !toolname.IsNamespaced(args.Name) {
+			return nil, fmt.Errorf("tool '%s' not found", args.Name)
+		}
+		originalName = args.Name
 	}
 
 	// Call shared core function
-	result, err := InspectTool(ctx, provider, args.Name)
+	result, err := InspectTool(ctx, provider, originalName, mapper)
 	if err != nil {
 		return nil, err
 	}

@@ -7,11 +7,10 @@ import (
 	"os"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/vaayne/mcphub/internal/logging"
+	"github.com/vaayne/mcphub/internal/toolname"
 
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 	ucli "github.com/urfave/cli/v3"
 )
 
@@ -98,108 +97,12 @@ func getLogger(cmd *ucli.Command) *slog.Logger {
 	return logging.Logger
 }
 
-// ToolNameMapper maintains bidirectional mapping between original and JS method names
-type ToolNameMapper struct {
-	toJS       map[string]string // original -> jsName
-	toOriginal map[string]string // jsName -> original
-}
-
-// NewToolNameMapper creates a mapper from a list of tools
-func NewToolNameMapper(tools []*mcp.Tool) *ToolNameMapper {
-	m := &ToolNameMapper{
-		toJS:       make(map[string]string),
-		toOriginal: make(map[string]string),
-	}
-	for _, tool := range tools {
-		jsName := toJSMethodName(tool.Name)
-		m.toJS[tool.Name] = jsName
-		m.toOriginal[jsName] = tool.Name
-	}
-	return m
-}
-
-func NewToolNameMapperWithCollisionCheck(tools []*mcp.Tool) (*ToolNameMapper, error) {
-	collisions := make(map[string][]string)
-	for _, tool := range tools {
-		jsName := toJSMethodName(tool.Name)
-		collisions[jsName] = append(collisions[jsName], tool.Name)
-	}
-
-	var parts []string
-	for jsName, originals := range collisions {
-		if len(originals) > 1 {
-			parts = append(parts, fmt.Sprintf("%s: %s", jsName, strings.Join(originals, ", ")))
-		}
-	}
-
-	if len(parts) > 0 {
-		return nil, fmt.Errorf("tool name mapping collision: %s", strings.Join(parts, "; "))
-	}
-
-	return NewToolNameMapper(tools), nil
-}
-
-// ToJSName converts an original tool name to its JS method name
-func (m *ToolNameMapper) ToJSName(original string) string {
-	if jsName, ok := m.toJS[original]; ok {
-		return jsName
-	}
-	return toJSMethodName(original)
-}
-
-// ToOriginal converts a JS method name back to its original tool name
-// Returns the input unchanged if not found (allows pass-through)
-func (m *ToolNameMapper) ToOriginal(jsName string) string {
-	if original, ok := m.toOriginal[jsName]; ok {
-		return original
-	}
-	return jsName
-}
-
+// ensureNamespacedToolName validates that a tool name is in namespaced format for config mode
 func ensureNamespacedToolName(name string) error {
-	if !strings.Contains(name, "__") {
+	if !toolname.IsNamespaced(name) {
 		return fmt.Errorf("tool name must include server prefix (server__tool) when using --config")
 	}
 	return nil
-}
-
-// toJSMethodName converts a tool name to a valid JS method name (camelCase)
-// Examples:
-//   - get_code_context_exa -> getCodeContextExa
-//   - web_search_exa -> webSearchExa
-//   - searchGitHub -> searchGitHub (already valid)
-//   - my-tool-name -> myToolName
-func toJSMethodName(name string) string {
-	if name == "" {
-		return name
-	}
-
-	var result strings.Builder
-	capitalizeNext := false
-	isFirstChar := true
-
-	for _, r := range name {
-		// Treat underscores and hyphens as word separators
-		if r == '_' || r == '-' {
-			capitalizeNext = true
-			continue
-		}
-
-		// Handle the character
-		if isFirstChar {
-			// First character should always be lowercase for camelCase
-			result.WriteRune(unicode.ToLower(r))
-			isFirstChar = false
-			capitalizeNext = false
-		} else if capitalizeNext && unicode.IsLetter(r) {
-			result.WriteRune(unicode.ToUpper(r))
-			capitalizeNext = false
-		} else {
-			result.WriteRune(r)
-		}
-	}
-
-	return result.String()
 }
 
 // getStdioCommand extracts the stdio command from os.Args after the "--" separator.

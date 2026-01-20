@@ -18,7 +18,7 @@ Initial release of MCP Hub.
   - Stdio for local MCP servers
   - HTTP with custom headers, timeout, and TLS configuration
   - SSE (Server-Sent Events) for real-time streaming
-- **Tool namespacing**: Automatic `server__tool` naming to prevent conflicts
+- **Tool namespacing**: Automatic camelCase naming (`serverToolName`) to prevent conflicts
 - **CLI subcommands**:
   - `mh serve` - Start the MCP hub server
   - `mh list` - List tools from MCP services
@@ -33,7 +33,7 @@ Initial release of MCP Hub.
   - `inspect` - Get detailed tool schema information
   - `exec` - Execute JavaScript code with access to MCP tools
 - **JavaScript runtime** (Goja):
-  - Synchronous execution with `mcp.callTool("server__tool", params)`
+  - Synchronous execution with `mcp.callTool("serverToolName", params)`
   - `console.log/info/warn/error/debug` for logging
   - 15-second execution timeout (configurable)
 - **Security features**:

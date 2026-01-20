@@ -38,7 +38,7 @@ func TestHandleInvokeTool_EmptyName(t *testing.T) {
 	assert.Contains(t, err.Error(), "name is required")
 }
 
-// TestHandleInvokeTool_NoNamespace tests error when name lacks namespace
+// TestHandleInvokeTool_NoNamespace tests error when name lacks namespace and is not found
 func TestHandleInvokeTool_NoNamespace(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
@@ -61,7 +61,8 @@ func TestHandleInvokeTool_NoNamespace(t *testing.T) {
 
 	_, err = HandleInvokeTool(context.Background(), provider, req)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "must be namespaced")
+	// Now we return "not found" since we try to resolve both JS name and original name
+	assert.Contains(t, err.Error(), "not found")
 }
 
 // TestHandleInvokeTool_EmptyServerID tests error when server ID is empty
@@ -216,5 +217,6 @@ func TestHandleInvokeTool_ContextCancellation(t *testing.T) {
 
 	_, err = HandleInvokeTool(ctx, provider, req)
 	assert.Error(t, err)
-	assert.Equal(t, context.Canceled, err)
+	// Error is now wrapped: "failed to list tools: context canceled"
+	assert.Contains(t, err.Error(), "context canceled")
 }

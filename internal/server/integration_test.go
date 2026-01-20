@@ -518,7 +518,8 @@ func TestIntegration_InspectToolValidation(t *testing.T) {
 
 	_, err = server.handleBuiltinTool(context.Background(), "inspect", req)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "must be namespaced")
+	// Now we return "not found" since we try to resolve both JS name and original name
+	assert.Contains(t, err.Error(), "not found")
 }
 
 // TestIntegration_JSExecutionSyntaxError tests JS syntax error handling

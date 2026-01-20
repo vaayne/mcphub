@@ -10,16 +10,18 @@ Use this tool for simple, one-off tool calls. For chaining multiple tools or add
 
 ## Usage
 
-Provide the namespaced tool name and optional parameters:
+Provide the tool name in either format:
+- **JS name (camelCase)**: `githubSearchRepos`
+- **Original name**: `github__search_repos`
 
 ```json
-{ "name": "github__search_repos", "params": { "query": "mcp", "limit": 10 } }
+{ "name": "githubSearchRepos", "params": { "query": "mcp", "limit": 10 } }
 ```
 
 For tools with no parameters:
 
 ```json
-{ "name": "server__list_items" }
+{ "name": "serverListItems" }
 ```
 
 ## Output Format

@@ -18,16 +18,17 @@ func TestRenderListDescription_InsertsToolsWithTruncationAndSorting(t *testing.T
 	rendered := RenderListDescription(base, remote)
 
 	assert.Contains(t, rendered, "## Avaliable Tools")
-	assert.Contains(t, rendered, "- a__one: short description")
+	// Now uses JS names (camelCase): a__one -> aOne, b__two -> bTwo
+	assert.Contains(t, rendered, "- aOne: short description")
 
 	// Truncated to 50 words with ellipsis.
-	assert.Contains(t, rendered, "- b__two: ")
+	assert.Contains(t, rendered, "- bTwo: ")
 	assert.Contains(t, rendered, "…")
 
-	// Sorted by tool name.
+	// Sorted by JS tool name.
 	assert.Less(t,
-		strings.Index(rendered, "- a__one:"),
-		strings.Index(rendered, "- b__two:"),
+		strings.Index(rendered, "- aOne:"),
+		strings.Index(rendered, "- bTwo:"),
 	)
 }
 
