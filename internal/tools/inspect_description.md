@@ -1,45 +1,26 @@
-Inspect a specific MCP tool to get its full schema.
+Get full tool signature as JSDoc stub. Use before `invoke` or `exec` to see parameters.
 
-Use this tool when you need detailed information about a single tool, including its complete input schema with all parameters, types, and constraints.
+## Parameters
 
-## When To Use
+- `name` - Tool name in camelCase, e.g. `githubSearchRepos` (required)
 
-- When you know the tool name and need its full schema before calling it
-- When `list` output is truncated and you need complete parameter details
-- To verify exact parameter names and types before using `exec`
-
-## Usage
-
-Provide the tool name in either format:
-- **JS name (camelCase)**: `githubSearchRepos`
-- **Original name**: `github__search_repos`
+## Example
 
 ```json
-{ "name": "githubSearchRepos" }
+{"name": "githubSearchRepos"}
 ```
 
-## Output Format
+## Output
 
-Returns JSON with full tool details (names are in camelCase format):
+JSDoc function stub (copy-paste ready for `exec`):
 
-```json
-{
-  "name": "githubSearchRepos",
-  "description": "Search GitHub repositories",
-  "server": "github",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "query": {
-        "type": "string",
-        "description": "Search query"
-      },
-      "limit": {
-        "type": "number",
-        "description": "Max results to return"
-      }
-    },
-    "required": ["query"]
-  }
-}
+```javascript
+/**
+ * Search repositories on GitHub
+ * @param {Object} params - Parameters
+ * @param {string} params.query - Search query (required)
+ * @param {"asc"|"desc"} [params.order="desc"] - Sort order
+ * @param {number} [params.perPage=30] - Results per page
+ */
+function githubSearchRepos(params) {}
 ```

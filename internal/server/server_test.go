@@ -55,21 +55,21 @@ func TestRegisterBuiltinTools(t *testing.T) {
 	listTool, exists := server.builtinRegistry.GetTool("list")
 	assert.True(t, exists)
 	assert.Equal(t, "list", listTool.Name)
-	assert.Contains(t, listTool.Description, "List MCP tools")
+	assert.Contains(t, listTool.Description, "List all available tools")
 	assert.NotNil(t, listTool.InputSchema)
 
 	// Verify inspect tool
 	inspectTool, exists := server.builtinRegistry.GetTool("inspect")
 	assert.True(t, exists)
 	assert.Equal(t, "inspect", inspectTool.Name)
-	assert.Contains(t, inspectTool.Description, "Inspect a specific MCP tool")
+	assert.Contains(t, inspectTool.Description, "Get full tool signature")
 	assert.NotNil(t, inspectTool.InputSchema)
 
 	// Verify invoke tool
 	invokeTool, exists := server.builtinRegistry.GetTool("invoke")
 	assert.True(t, exists)
 	assert.Equal(t, "invoke", invokeTool.Name)
-	assert.Contains(t, invokeTool.Description, "Invoke a single MCP tool")
+	assert.Contains(t, invokeTool.Description, "Call a single tool")
 	assert.NotNil(t, invokeTool.InputSchema)
 
 	// Verify exec tool

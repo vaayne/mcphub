@@ -1,54 +1,70 @@
-Execute JavaScript code with access to MCP tools.
+Execute JavaScript code to orchestrate multiple tool calls with logic.
 
-Write JavaScript code to call multiple MCP tools in a single request. Use loops, conditionals, and data transformation to efficiently batch operations.
+Use `inspect` first to get tool signatures, then write JS code using `mcp.callTool(name, params)`.
 
-## Quick guide
+## Parameters
 
-- **Discovery**: Use the `list` tool first to see available tools as JavaScript function stubs with JSDoc.
-- **Batching**: Prefer one exec call with multiple `mcp.callTool()` invocations instead of many exec calls.
-- **Result**: The last expression is returned. Don't use `return` at top level; use an async IIFE if you need `await`.
-- **Async**: Async/await, Promises, and timers (`setTimeout`, `setInterval`, `setImmediate`) are supported.
-- **Require**: `require()` works for core goja_nodejs modules like `node:buffer`, `node:process`, `node:url`, `node:util`, and the built-in `console`.
-- **MCP helpers**:
-  - `mcp.callTool("toolName", params)` → calls any MCP tool; throws on failure.
-  - Tool names can be **JS name (camelCase)** like `githubSearchRepos` or **original** like `github__search_repos`.
-  - `mcp.log(level, message, fields?)` or `console.*` → captured in `logs`.
-- **No browser APIs**: `window`, `document`, `page`, `fetch`, etc. are not provided; get data via MCP tools.
+- `code` - JavaScript code to execute (required)
 
-## Minimal patterns
+## API
 
-- Async IIFE:
-  ```javascript
-  (async () => {
-    const users = await mcp.callTool("dbListUsers", { limit: 50 });
-    return users.filter(u => u.active);
-  })();
-  ```
-- Batch with error capture:
-  ```javascript
-  const ids = [1, 2, 3];
-  ids.map(id => {
-    try {
-      return { id, ok: true, data: mcp.callTool("dbGetUser", { id }) };
-    } catch (e) {
-      return { id, ok: false, error: e.message };
-    }
-  });
-  ```
-- Require example:
-  ```javascript
-  const { Buffer } = require("node:buffer");
-  Buffer.from("hi").toString("hex");
-  ```
+- `mcp.callTool(name, params)` - Call a tool, returns result or throws on error
+- `console.log/info/warn/error` - Logging (captured in output)
+- `require("node:buffer/url/util")` - Node.js modules
+
+## Supported
+
+- Variables, loops, conditionals
+- `async/await`, Promises
+- `try/catch` for error handling
+- Last expression is returned (no top-level `return`)
+
+## Not Available
+
+- `fetch`, `window`, `document` - Use MCP tools for external data
+- `fs`, `child_process` - No filesystem/process access
+
+## Examples
+
+Single call:
+```javascript
+mcp.callTool("webSearchExa", {query: "MCP protocol"})
+```
+
+Chain calls:
+```javascript
+const user = mcp.callTool("dbGetUser", {id: 123});
+mcp.callTool("emailSend", {to: user.email, subject: "Hello"});
+```
+
+Batch with error handling:
+```javascript
+const ids = [1, 2, 3];
+ids.map(id => {
+  try {
+    return {id, ok: true, data: mcp.callTool("dbGetUser", {id})};
+  } catch (e) {
+    return {id, ok: false, error: e.message};
+  }
+});
+```
+
+Async pattern:
+```javascript
+(async () => {
+  const users = await mcp.callTool("dbListUsers", {limit: 10});
+  return users.filter(u => u.active);
+})();
+```
 
 ## Constraints
 
-- Timeout: 60s per exec call
-- Max script size: 100KB
-- Logs capped at 1000 entries
+- Timeout: 15 seconds
+- Max code size: 100KB
+- Max log entries: 1000
 
 ## Output
 
-- `result`: last expression value
-- `logs`: array of `console`/`mcp.log` entries
-- `error`: populated if execution fails
+- `result` - Last expression value
+- `logs` - Array of console/mcp.log entries
+- `error` - Error details if execution fails

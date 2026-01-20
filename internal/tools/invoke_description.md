@@ -1,53 +1,17 @@
-Invoke a single MCP tool by name.
+Call a single tool with parameters. Use `inspect` first to get the tool signature.
 
-Use this tool for simple, one-off tool calls. For chaining multiple tools or adding logic, use `exec` instead.
+## Parameters
 
-## When To Use
+- `name` - Tool name in camelCase, e.g. `githubSearchRepos` (required)
+- `params` - Tool parameters as object (optional)
 
-- Single tool call with known parameters
-- Quick testing of a tool
-- Simple operations without orchestration
-
-## Usage
-
-Provide the tool name in either format:
-- **JS name (camelCase)**: `githubSearchRepos`
-- **Original name**: `github__search_repos`
+## Examples
 
 ```json
-{ "name": "githubSearchRepos", "params": { "query": "mcp", "limit": 10 } }
+{"name": "githubSearchRepos", "params": {"query": "mcp", "perPage": 10}}
+{"name": "webSearchExa", "params": {"query": "MCP protocol"}}
 ```
 
-For tools with no parameters:
+## Output
 
-```json
-{ "name": "serverListItems" }
-```
-
-## Output Format
-
-Returns the raw tool result. For text content:
-
-```
-Search found 3 repositories:
-- repo1: Description of repo1
-- repo2: Description of repo2
-- repo3: Description of repo3
-```
-
-With `--json` or structured output, returns the full CallToolResult:
-
-```json
-{
-  "content": [
-    { "type": "text", "text": "Search found 3 repositories..." }
-  ],
-  "isError": false
-}
-```
-
-## See Also
-
-- `list` - Find available tools
-- `inspect` - Get tool schema before invoking
-- `exec` - Chain multiple tool calls with JavaScript
+Returns the tool's result directly (text or JSON).

@@ -172,26 +172,14 @@ func (s *Server) Stop() error {
 // registerBuiltinTools registers all built-in tools
 func (s *Server) registerBuiltinTools() {
 	// Schema for list tool
-	listSchema := map[string]any{
-		"type": "object",
-		"properties": map[string]any{
-			"server": map[string]any{
-				"type":        "string",
-				"description": "Optional: filter tools by server name",
-			},
-			"query": map[string]any{
-				"type":        "string",
-				"description": "Optional: comma-separated keywords for fulltext search (e.g., 'file,read,write'). Tool matches if any keyword appears in name or description.",
-				"maxLength":   1000,
-			},
-		},
-	}
-
-	// Register list tool
+	// Register list tool (no parameters - returns all tools)
 	s.builtinRegistry.RegisterTool(config.BuiltinTool{
 		Name:        "list",
 		Description: tools.ListDescription,
-		InputSchema: listSchema,
+		InputSchema: map[string]any{
+			"type":       "object",
+			"properties": map[string]any{},
+		},
 	})
 
 	// Register inspect tool

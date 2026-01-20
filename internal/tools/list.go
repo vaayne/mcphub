@@ -3,7 +3,6 @@ package tools
 import (
 	"context"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -122,20 +121,8 @@ func FormatListResult(result *ListResult, mapper *toolname.Mapper) []ListToolRes
 
 // HandleListTool handles the list tool call (MCP server handler)
 func HandleListTool(ctx context.Context, provider ToolProvider, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// Parse arguments
-	var args struct {
-		Server string `json:"server"`
-		Query  string `json:"query"`
-	}
-	if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
-		return nil, fmt.Errorf("failed to parse list arguments: %w", err)
-	}
-
-	// Call shared core function
-	result, err := ListTools(ctx, provider, ListOptions{
-		Server: args.Server,
-		Query:  args.Query,
-	})
+	// Call shared core function (no parameters - returns all tools)
+	result, err := ListTools(ctx, provider, ListOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -14,37 +14,7 @@ import (
 )
 
 // List tool request handling
-func TestHandleListTool_NoResults(t *testing.T) {
-	logger := logging.NopLogger()
-	manager := client.NewManager(logger)
-	defer manager.DisconnectAll()
-
-	provider := NewManagerAdapter(manager)
-
-	args := map[string]any{
-		"query": "nonexistent",
-	}
-	argsJSON, err := json.Marshal(args)
-	require.NoError(t, err)
-
-	req := &mcp.CallToolRequest{
-		Params: &mcp.CallToolParamsRaw{
-			Name:      "list",
-			Arguments: argsJSON,
-		},
-	}
-
-	result, err := HandleListTool(context.Background(), provider, req)
-	require.NoError(t, err)
-
-	textContent, ok := result.Content[0].(*mcp.TextContent)
-	require.True(t, ok)
-
-	// Output is now simple text format
-	assert.Contains(t, textContent.Text, "No tools available")
-}
-
-func TestHandleListTool_NoArgs(t *testing.T) {
+func TestHandleListTool_NoTools(t *testing.T) {
 	logger := logging.NopLogger()
 	manager := client.NewManager(logger)
 	defer manager.DisconnectAll()
@@ -66,25 +36,6 @@ func TestHandleListTool_NoArgs(t *testing.T) {
 
 	// Output is now simple text format
 	assert.Contains(t, textContent.Text, "No tools available")
-}
-
-func TestHandleListTool_InvalidJSON(t *testing.T) {
-	logger := logging.NopLogger()
-	manager := client.NewManager(logger)
-	defer manager.DisconnectAll()
-
-	provider := NewManagerAdapter(manager)
-
-	req := &mcp.CallToolRequest{
-		Params: &mcp.CallToolParamsRaw{
-			Name:      "list",
-			Arguments: json.RawMessage(`{invalid json}`),
-		},
-	}
-
-	_, err := HandleListTool(context.Background(), provider, req)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse list arguments")
 }
 
 // Keyword matching helpers
