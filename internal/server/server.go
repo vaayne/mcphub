@@ -290,15 +290,10 @@ func (s *Server) registerAllTools() error {
 
 // registerBuiltinToolHandler registers a handler for a built-in tool
 func (s *Server) registerBuiltinToolHandler(toolName string, builtinTool config.BuiltinTool) error {
-	description := builtinTool.Description
-	if toolName == "list" {
-		description = tools.RenderListDescription(description, s.clientManager.GetAllTools())
-	}
-
 	// Create MCP tool schema
 	mcpTool := &mcp.Tool{
 		Name:        toolName,
-		Description: description,
+		Description: builtinTool.Description,
 		InputSchema: builtinTool.InputSchema,
 	}
 
