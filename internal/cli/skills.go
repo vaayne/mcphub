@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	ucli "github.com/urfave/cli/v3"
+	"github.com/vaayne/mcphub/internal/skills"
 )
 
 // SkillsCmd is the skills subcommand for discovering and installing agent skills
@@ -143,190 +143,39 @@ func runSkillsAdd(ctx context.Context, cmd *ucli.Command) error {
 
 	pkg := strings.TrimSpace(cmd.Args().First())
 
-	owner, repo, skill, err := parseSkillPackage(pkg)
+	parsed, err := skills.ParseSource(pkg)
 	if err != nil {
 		return err
 	}
 
-	repoURL := fmt.Sprintf("https://github.com/%s/%s.git", owner, repo)
-
-	// Get cache directory
-	cacheDir := getCacheDir(owner, repo)
-
-	// Clone or update the repo in cache
-	if err := cloneOrUpdateRepo(ctx, repoURL, cacheDir); err != nil {
-		return err
+	if parsed.Type != skills.SourceTypeGitHub && parsed.Type != skills.SourceTypeGitLab && parsed.Type != skills.SourceTypeGit {
+		return fmt.Errorf("only git-based sources are supported (got %s)", parsed.Type)
 	}
 
-	// Find the skill folder in the repo
-	skillSourceDir, err := findSkillDir(cacheDir, skill)
+	fmt.Printf("Fetching skill from %s...\n", parsed.URL)
+
+	localDir, err := skills.FetchGitSkill(ctx, skills.GitSource{
+		URL:         parsed.URL,
+		Ref:         parsed.Ref,
+		Subpath:     parsed.Subpath,
+		SkillFilter: parsed.SkillFilter,
+	})
 	if err != nil {
 		return err
 	}
 
-	// Get target directory
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
-	targetDir := filepath.Join(cwd, ".agents", "skills", skill)
+	targetDir := filepath.Join(cwd, ".agents", "skills", localDir.SkillName)
 
-	// Remove existing skill if present
-	if _, err := os.Stat(targetDir); err == nil {
-		if err := os.RemoveAll(targetDir); err != nil {
-			return fmt.Errorf("failed to remove existing skill: %w", err)
-		}
-	}
-
-	// Create parent directory
-	if err := os.MkdirAll(filepath.Dir(targetDir), 0755); err != nil {
-		return fmt.Errorf("failed to create skills directory: %w", err)
-	}
-
-	// Copy skill to target
-	if err := copyDir(skillSourceDir, targetDir); err != nil {
-		return fmt.Errorf("failed to install skill: %w", err)
+	if err := skills.InstallSkill(localDir.Path, targetDir); err != nil {
+		return err
 	}
 
 	fmt.Printf("✓ Installed %s to %s\n", pkg, targetDir)
 	return nil
 }
 
-func getCacheDir(owner, repo string) string {
-	cacheBase := os.Getenv("XDG_CACHE_HOME")
-	if cacheBase == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			cacheBase = "/tmp"
-		} else {
-			cacheBase = filepath.Join(homeDir, ".cache")
-		}
-	}
-	return filepath.Join(cacheBase, "mcphub", "skills", owner, repo)
-}
 
-func cloneOrUpdateRepo(ctx context.Context, repoURL, cacheDir string) error {
-	gitDir := filepath.Join(cacheDir, ".git")
-
-	if _, err := os.Stat(gitDir); err == nil {
-		// Repo exists, pull updates
-		fmt.Printf("Updating cached repo...\n")
-		gitCmd := exec.CommandContext(ctx, "git", "pull", "--ff-only")
-		gitCmd.Dir = cacheDir
-		gitCmd.Stdout = os.Stdout
-		gitCmd.Stderr = os.Stderr
-		if err := gitCmd.Run(); err != nil {
-			// If pull fails, try to continue with existing cache
-			fmt.Printf("Warning: failed to update cache, using existing version\n")
-		}
-		return nil
-	}
-
-	// Clone the repo
-	fmt.Printf("Cloning repository...\n")
-	if err := os.MkdirAll(filepath.Dir(cacheDir), 0755); err != nil {
-		return fmt.Errorf("failed to create cache directory: %w", err)
-	}
-
-	gitCmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", repoURL, cacheDir)
-	gitCmd.Stdout = os.Stdout
-	gitCmd.Stderr = os.Stderr
-
-	if err := gitCmd.Run(); err != nil {
-		return fmt.Errorf("failed to clone repository: %w", err)
-	}
-
-	return nil
-}
-
-func findSkillDir(repoDir, skillName string) (string, error) {
-	var foundPath string
-
-	err := filepath.Walk(repoDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() && info.Name() == ".git" {
-			return filepath.SkipDir
-		}
-
-		if !info.IsDir() {
-			name := strings.ToLower(info.Name())
-			if name == "skill.md" {
-				parentDir := filepath.Dir(path)
-				parentName := filepath.Base(parentDir)
-				if strings.EqualFold(parentName, skillName) {
-					foundPath = parentDir
-					return filepath.SkipAll
-				}
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil && err != filepath.SkipAll {
-		return "", fmt.Errorf("failed to search for skill: %w", err)
-	}
-
-	if foundPath == "" {
-		return "", fmt.Errorf("skill %q not found in repository (expected %s/SKILL.md)", skillName, skillName)
-	}
-
-	return foundPath, nil
-}
-
-func parseSkillPackage(pkg string) (owner, repo, skill string, err error) {
-	parts := strings.SplitN(pkg, "@", 2)
-	if len(parts) != 2 {
-		return "", "", "", fmt.Errorf("invalid package format: %s (expected owner/repo@skill)", pkg)
-	}
-
-	ownerRepo := parts[0]
-	skill = parts[1]
-
-	ownerRepoParts := strings.SplitN(ownerRepo, "/", 2)
-	if len(ownerRepoParts) != 2 {
-		return "", "", "", fmt.Errorf("invalid package format: %s (expected owner/repo@skill)", pkg)
-	}
-
-	owner = ownerRepoParts[0]
-	repo = ownerRepoParts[1]
-
-	if owner == "" || repo == "" || skill == "" {
-		return "", "", "", fmt.Errorf("invalid package format: %s (expected owner/repo@skill)", pkg)
-	}
-
-	return owner, repo, skill, nil
-}
-
-func copyDir(src, dst string) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() && info.Name() == ".git" {
-			return filepath.SkipDir
-		}
-
-		relPath, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-
-		targetPath := filepath.Join(dst, relPath)
-
-		if info.IsDir() {
-			return os.MkdirAll(targetPath, info.Mode())
-		}
-
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		return os.WriteFile(targetPath, data, info.Mode())
-	})
-}
