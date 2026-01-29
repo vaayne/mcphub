@@ -81,6 +81,7 @@ with remote MCP services.`,
 			cli.InvokeCmd,
 			cli.ExecCmd,
 			cli.UpdateCmd,
+			cli.SkillsCmd,
 		},
 	}
 
