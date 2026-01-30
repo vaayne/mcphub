@@ -18,6 +18,13 @@ Use this skill when the user:
 - Wants to search for tools, templates, or workflows
 - Mentions they wish they had help with a specific domain (design, testing, deployment, etc.)
 
+## Requirements
+
+- `mh` CLI must be installed. If not available, install with:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/vaayne/mcphub/main/scripts/install.sh | sh
+  ```
+
 ## What is the Skills CLI?
 
 The MCP Hub CLI (`mh skills`) is the package manager for the open agent skills ecosystem. Skills are modular packages that extend agent capabilities with specialized knowledge, workflows, and tools.
