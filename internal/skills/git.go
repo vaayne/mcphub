@@ -55,19 +55,23 @@ func FetchGitSkill(ctx context.Context, src GitSource) (*LocalSkillDir, error) {
 }
 
 // GetCacheDir returns the cache directory for a git repo URL and optional ref.
+// Format: ~/.cache/mcphub/skills/<owner>/<repo> (or <owner>/<repo>@<ref> if ref specified)
 func GetCacheDir(repoURL, ref string) (string, error) {
-	key := repoURL
-	if ref != "" {
-		key += "@" + ref
+	// Extract owner/repo from URL
+	// Handles: https://github.com/owner/repo.git, https://gitlab.com/owner/repo.git, etc.
+	owner, repo := extractOwnerRepo(repoURL)
+	if owner == "" || repo == "" {
+		// Fallback for non-standard URLs: use hash
+		hash := sha256.Sum256([]byte(repoURL))
+		hashStr := hex.EncodeToString(hash[:8])
+		name := repoURL
+		if idx := strings.LastIndex(name, "/"); idx >= 0 {
+			name = name[idx+1:]
+		}
+		name = strings.TrimSuffix(name, ".git")
+		owner = name + "-" + hashStr
+		repo = ""
 	}
-	hash := sha256.Sum256([]byte(key))
-	hashStr := hex.EncodeToString(hash[:8])
-
-	name := repoURL
-	if idx := strings.LastIndex(name, "/"); idx >= 0 {
-		name = name[idx+1:]
-	}
-	name = strings.TrimSuffix(name, ".git")
 
 	cacheBase := os.Getenv("XDG_CACHE_HOME")
 	if cacheBase == "" {
@@ -79,7 +83,37 @@ func GetCacheDir(repoURL, ref string) (string, error) {
 		}
 	}
 
-	return filepath.Join(cacheBase, "mcphub", "skills", fmt.Sprintf("%s-%s", name, hashStr)), nil
+	// Build cache path: owner/repo or owner/repo@ref
+	repoDir := repo
+	if ref != "" {
+		repoDir = repo + "@" + ref
+	}
+
+	if repo == "" {
+		return filepath.Join(cacheBase, "mcphub", "skills", owner), nil
+	}
+	return filepath.Join(cacheBase, "mcphub", "skills", owner, repoDir), nil
+}
+
+// extractOwnerRepo extracts owner and repo from a git URL.
+// Returns empty strings if URL format is not recognized.
+func extractOwnerRepo(repoURL string) (owner, repo string) {
+	// Remove .git suffix
+	url := strings.TrimSuffix(repoURL, ".git")
+
+	// Handle https://github.com/owner/repo or https://gitlab.com/owner/repo
+	parts := strings.Split(url, "/")
+	if len(parts) >= 2 {
+		repo = parts[len(parts)-1]
+		owner = parts[len(parts)-2]
+		// Skip if owner is a host (e.g., github.com)
+		if strings.Contains(owner, ".") {
+			return "", ""
+		}
+		return owner, repo
+	}
+
+	return "", ""
 }
 
 // cloneOrUpdate clones a repo if not cached, or pulls updates if cached.

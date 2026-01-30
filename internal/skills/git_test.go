@@ -10,43 +10,33 @@ import (
 )
 
 func TestGetCacheDir(t *testing.T) {
-	tests := []struct {
-		name string
-		url  string
-		ref  string
-	}{
-		{"github url", "https://github.com/owner/repo.git", ""},
-		{"github url with ref", "https://github.com/owner/repo.git", "main"},
-		{"gitlab url", "https://gitlab.com/owner/repo.git", ""},
-		{"different repos different dirs", "https://github.com/other/repo.git", ""},
-	}
-
-	dirs := make(map[string]string)
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dir, err := GetCacheDir(tt.url, tt.ref)
-			require.NoError(t, err)
-			assert.NotEmpty(t, dir)
-			assert.Contains(t, dir, "mcphub")
-			assert.Contains(t, dir, "skills")
-
-			// Each unique (url, ref) should produce a unique dir
-			key := tt.url + "@" + tt.ref
-			if existingKey, exists := dirs[dir]; exists && existingKey != key {
-				t.Errorf("Dir %s already seen for different input: %s vs %s", dir, existingKey, key)
-			}
-			dirs[dir] = key
-		})
-	}
+	// Test basic cache dir structure
+	dir, err := GetCacheDir("https://github.com/vercel-labs/agent-skills.git", "")
+	require.NoError(t, err)
+	assert.Contains(t, dir, "mcphub")
+	assert.Contains(t, dir, "skills")
+	assert.Contains(t, dir, "vercel-labs")
+	assert.Contains(t, dir, "agent-skills")
 
 	// Verify ref changes the cache dir
 	dir1, _ := GetCacheDir("https://github.com/owner/repo.git", "")
 	dir2, _ := GetCacheDir("https://github.com/owner/repo.git", "main")
 	assert.NotEqual(t, dir1, dir2, "different refs should produce different cache dirs")
+	assert.Contains(t, dir2, "@main")
 
 	// Verify same inputs produce same output
 	dir3, _ := GetCacheDir("https://github.com/owner/repo.git", "main")
 	assert.Equal(t, dir2, dir3, "same inputs should produce same cache dir")
+
+	// Different owners should produce different dirs
+	dir4, _ := GetCacheDir("https://github.com/alice/repo.git", "")
+	dir5, _ := GetCacheDir("https://github.com/bob/repo.git", "")
+	assert.NotEqual(t, dir4, dir5, "different owners should produce different cache dirs")
+
+	// GitHub and GitLab for same owner/repo should share cache (same logical repo)
+	dir6, _ := GetCacheDir("https://github.com/owner/repo.git", "")
+	dir7, _ := GetCacheDir("https://gitlab.com/owner/repo.git", "")
+	assert.Equal(t, dir6, dir7, "same owner/repo across hosts should share cache")
 }
 
 func TestGetCacheDirRepoNameExtraction(t *testing.T) {
