@@ -289,13 +289,13 @@ func TestIsDirectSkillURL(t *testing.T) {
 		{"https://docs.example.com/SKILL.md", true},
 		{"https://huggingface.co/spaces/owner/repo/blob/main/SKILL.md", true},
 		{"https://example.com/path/to/skill.md", true},
-		{"https://github.com/owner/repo/blob/main/SKILL.md", true},     // blob URL is direct
-		{"https://github.com/owner/repo/tree/main/skill", false},       // tree URL is not direct
-		{"https://github.com/owner/repo", false},                       // repo URL, not skill.md
-		{"https://gitlab.com/owner/repo/-/raw/main/SKILL.md", true},    // raw URL is direct
-		{"https://gitlab.com/owner/repo/-/tree/main/skill.md", false},  // tree URL is not direct
-		{"http://example.com/skill.md", true},                          // HTTP works
-		{"not-a-url/skill.md", false},                                  // not a URL
+		{"https://github.com/owner/repo/blob/main/SKILL.md", true},    // blob URL is direct
+		{"https://github.com/owner/repo/tree/main/skill", false},      // tree URL is not direct
+		{"https://github.com/owner/repo", false},                      // repo URL, not skill.md
+		{"https://gitlab.com/owner/repo/-/raw/main/SKILL.md", true},   // raw URL is direct
+		{"https://gitlab.com/owner/repo/-/tree/main/skill.md", false}, // tree URL is not direct
+		{"http://example.com/skill.md", true},                         // HTTP works
+		{"not-a-url/skill.md", false},                                 // not a URL
 	}
 
 	for _, tt := range tests {
@@ -315,12 +315,12 @@ func TestIsWellKnownURL(t *testing.T) {
 		{"https://example.com/docs", true},
 		{"https://company.dev/skills", true},
 		{"http://example.com", true},
-		{"https://github.com", false},              // excluded host
-		{"https://gitlab.com", false},              // excluded host
-		{"https://huggingface.co", false},          // excluded host
-		{"https://example.com/skill.md", false},    // direct URL, not well-known
-		{"https://example.com/repo.git", false},    // git URL, not well-known
-		{"owner/repo", false},                      // not a URL
+		{"https://github.com", false},           // excluded host
+		{"https://gitlab.com", false},           // excluded host
+		{"https://huggingface.co", false},       // excluded host
+		{"https://example.com/skill.md", false}, // direct URL, not well-known
+		{"https://example.com/repo.git", false}, // git URL, not well-known
+		{"owner/repo", false},                   // not a URL
 	}
 
 	for _, tt := range tests {

@@ -28,53 +28,33 @@ Tool names can be in either format:
 
 Examples:
   # Inspect a tool
-  mh -u http://localhost:3000 inspect myTool
+  mh inspect -u http://localhost:3000 myTool
 
   # Inspect a tool with JSON output
-  mh -u http://localhost:3000 inspect myTool --json
+  mh inspect -u http://localhost:3000 myTool --json
 
   # Inspect a tool using SSE transport
-  mh -u http://localhost:3000 -t sse inspect myTool
+  mh inspect -u http://localhost:3000 -t sse myTool
 
   # Inspect a tool from config (stdio/http/sse)
-  mh -c config.json inspect githubSearchRepos
+  mh inspect -c config.json githubSearchRepos
 
   # Inspect a tool from a stdio MCP server
-  mh --stdio inspect echo -- npx @modelcontextprotocol/server-everything`,
+  mh inspect --stdio echo -- npx @modelcontextprotocol/server-everything`,
+	Flags:  MCPClientFlags(),
+	Before: ValidateMCPClientFlags,
 	Action: runInspect,
 }
 
 func runInspect(ctx context.Context, cmd *ucli.Command) error {
-	// Filter out args after "--" (used for stdio command)
 	args := cmd.Args().Slice()
 	filteredArgs := filterArgsBeforeDash(args)
 	if len(filteredArgs) != 1 {
 		return fmt.Errorf("accepts 1 arg(s), received %d", len(filteredArgs))
 	}
 
-	url := cmd.String("url")
 	configPath := cmd.String("config")
 	stdio := cmd.Bool("stdio")
-
-	// Count how many modes are specified
-	modeCount := 0
-	if url != "" {
-		modeCount++
-	}
-	if configPath != "" {
-		modeCount++
-	}
-	if stdio {
-		modeCount++
-	}
-
-	if modeCount == 0 {
-		return fmt.Errorf("--url, --config, or --stdio is required for inspect command")
-	}
-	if modeCount > 1 {
-		return fmt.Errorf("--url, --config, and --stdio are mutually exclusive")
-	}
-
 	toolName := filteredArgs[0]
 	jsonOutput := cmd.Bool("json")
 

@@ -36,19 +36,19 @@ Notes:
 URL mode:
 
 ```bash
-mh -u <url> -t <transport> list
+mh list -u <url> -t <transport>
 ```
 
 Stdio mode:
 
 ```bash
-mh --stdio list -- cmd args ...
+mh list --stdio -- cmd args ...
 ```
 
 Config mode:
 
 ```bash
-mh -c <config> list
+mh list -c <config>
 ```
 
 ### 3. Generate Skill
@@ -60,17 +60,17 @@ Usage blocks:
 URL mode:
 
 ```
-List tools: `mh -u {url} -t {transport} list`
-Get tool details: `mh -u {url} -t {transport} inspect <tool-name>`
-Invoke tool: `mh -u {url} -t {transport} invoke <tool-name> '{"param": "value"}'`
+List tools: `mh list -u {url} -t {transport}`
+Get tool details: `mh inspect -u {url} -t {transport} <tool-name>`
+Invoke tool: `mh invoke -u {url} -t {transport} <tool-name> '{"param": "value"}'`
 ```
 
 Config mode (use local config file name):
 
 ```
-List tools: `mh -c {config-file} list`
-Get tool details: `mh -c {config-file} inspect <tool-name>`
-Invoke tool: `mh -c {config-file} invoke <tool-name> '{"param": "value"}'`
+List tools: `mh list -c {config-file}`
+Get tool details: `mh inspect -c {config-file} <tool-name>`
+Invoke tool: `mh invoke -c {config-file} <tool-name> '{"param": "value"}'`
 ```
 
 Notes blocks:

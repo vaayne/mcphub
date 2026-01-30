@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -177,10 +178,8 @@ func isWellKnownURL(input string) bool {
 
 	// Exclude known git hosts
 	excludedHosts := []string{"github.com", "gitlab.com", "huggingface.co", "raw.githubusercontent.com"}
-	for _, h := range excludedHosts {
-		if parsed.Hostname() == h {
-			return false
-		}
+	if slices.Contains(excludedHosts, parsed.Hostname()) {
+		return false
 	}
 
 	// Don't match direct skill.md links

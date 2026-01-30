@@ -37,57 +37,18 @@ Examples:
   mh serve -c config.json -t sse --host 0.0.0.0 -p 3000
 
   # Run with verbose logging
-  mh serve -c config.json -v`,
-	Flags: []ucli.Flag{
-		&ucli.IntFlag{
-			Name:    "port",
-			Aliases: []string{"p"},
-			Usage:   "port for HTTP/SSE transport",
-			Value:   3000,
-		},
-		&ucli.StringFlag{
-			Name:  "host",
-			Usage: "host for HTTP/SSE transport",
-			Value: "localhost",
-		},
-	},
+  mh serve -c config.json --verbose`,
+	Flags:  MCPServeFlags(),
 	Action: runServe,
 }
 
-// RunServeFromRoot allows running serve command when invoked via root command with -c flag
-func RunServeFromRoot(ctx context.Context, cmd *ucli.Command) error {
-	return runServeWithCmd(ctx, cmd)
-}
-
 func runServe(ctx context.Context, cmd *ucli.Command) error {
-	return runServeWithCmd(ctx, cmd)
-}
-
-func runServeWithCmd(ctx context.Context, cmd *ucli.Command) error {
-	// Get config flag - works for both persistent (from root) and local flags
 	configPath := cmd.String("config")
-
-	// Get local flags (only on serve command)
 	port := cmd.Int("port")
 	host := cmd.String("host")
-	// Use defaults if not set (when called from root command)
-	if port == 0 {
-		port = 3000
-	}
-	if host == "" {
-		host = "localhost"
-	}
-
-	// Get persistent flags from parent (root command)
 	transport := cmd.String("transport")
 	verbose := cmd.Bool("verbose")
 	logFile := cmd.String("log-file")
-
-	// For serve command, default to stdio if transport wasn't explicitly set
-	// (parent default is empty string for subcommand-specific defaults)
-	if transport == "" {
-		transport = "stdio"
-	}
 
 	// Validate transport type for serve command (stdio/http/sse)
 	if transport != "stdio" && transport != "http" && transport != "sse" {

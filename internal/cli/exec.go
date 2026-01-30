@@ -38,19 +38,21 @@ Tool names can be in either format:
 
 Examples:
   # Chain tool calls (config mode)
-  mh -c config.json exec 'const user = mcp.callTool("dbGetUser", {id: 1}); mcp.callTool("emailSend", {to: user.email})'
+  mh exec -c config.json 'const user = mcp.callTool("dbGetUser", {id: 1}); mcp.callTool("emailSend", {to: user.email})'
 
   # Read code from stdin
-  cat script.js | mh -c config.json exec -
+  cat script.js | mh exec -c config.json -
 
   # With remote server (use tool names directly)
-  mh -u http://localhost:3000 exec 'const a = mcp.callTool("add", {x: 1, y: 2}); mcp.callTool("multiply", {x: a, y: 3})'
+  mh exec -u http://localhost:3000 'const a = mcp.callTool("add", {x: 1, y: 2}); mcp.callTool("multiply", {x: a, y: 3})'
 
   # With stdio server (use tool names directly)
-  mh --stdio exec 'mcp.callTool("echo", {message: "hello"})' -- npx @modelcontextprotocol/server-everything
+  mh exec --stdio 'mcp.callTool("echo", {message: "hello"})' -- npx @modelcontextprotocol/server-everything
 
   # JSON output
-  mh -c config.json exec --json 'mcp.callTool("githubListRepos", {})'`,
+  mh exec -c config.json --json 'mcp.callTool("githubListRepos", {})'`,
+	Flags:  MCPClientFlags(),
+	Before: ValidateMCPClientFlags,
 	Action: runExec,
 }
 
@@ -99,37 +101,14 @@ func (c *cliToolCaller) ListTools(ctx context.Context) ([]*mcp.Tool, error) {
 }
 
 func runExec(ctx context.Context, cmd *ucli.Command) error {
-	// Filter out args after "--" (used for stdio command)
 	args := cmd.Args().Slice()
 	filteredArgs := filterArgsBeforeDash(args)
 	if len(filteredArgs) != 1 {
 		return fmt.Errorf("accepts 1 arg (code or -), received %d", len(filteredArgs))
 	}
 
-	url := cmd.String("url")
 	configPath := cmd.String("config")
 	stdio := cmd.Bool("stdio")
-
-	// Count how many modes are specified
-	modeCount := 0
-	if url != "" {
-		modeCount++
-	}
-	if configPath != "" {
-		modeCount++
-	}
-	if stdio {
-		modeCount++
-	}
-
-	if modeCount == 0 {
-		return fmt.Errorf("--url, --config, or --stdio is required for exec command")
-	}
-	if modeCount > 1 {
-		return fmt.Errorf("--url, --config, and --stdio are mutually exclusive")
-	}
-
-	// Get code from args or stdin
 	codeArg := filteredArgs[0]
 
 	var code string

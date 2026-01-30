@@ -24,26 +24,26 @@ stdio/http/sse servers from config, or --stdio to spawn a subprocess.
 
 Examples:
   # List tools from a remote server
-  mh -u http://localhost:3000 list
+  mh list -u http://localhost:3000
 
   # List tools with JSON output
-  mh -u http://localhost:3000 list --json
+  mh list -u http://localhost:3000 --json
 
   # List tools using SSE transport
-  mh -u http://localhost:3000 -t sse list
+  mh list -u http://localhost:3000 -t sse
 
   # List tools from config (stdio/http/sse)
-  mh -c config.json list
+  mh list -c config.json
 
   # List tools filtered by server
-  mh -c config.json list --server github
+  mh list -c config.json --server github
 
   # List tools filtered by keywords
-  mh -c config.json list --query "search,file"
+  mh list -c config.json --query "search,file"
 
   # List tools from a stdio MCP server
-  mh --stdio list -- npx @modelcontextprotocol/server-everything`,
-	Flags: []ucli.Flag{
+  mh list --stdio -- npx @modelcontextprotocol/server-everything`,
+	Flags: append(MCPClientFlags(),
 		&ucli.StringFlag{
 			Name:  "server",
 			Usage: "filter tools by server name",
@@ -52,7 +52,8 @@ Examples:
 			Name:  "query",
 			Usage: "comma-separated keywords for search (matches name or description)",
 		},
-	},
+	),
+	Before: ValidateMCPClientFlags,
 	Action: runList,
 }
 
@@ -60,26 +61,6 @@ func runList(ctx context.Context, cmd *ucli.Command) error {
 	url := cmd.String("url")
 	configPath := cmd.String("config")
 	stdio := cmd.Bool("stdio")
-
-	// Count how many modes are specified
-	modeCount := 0
-	if url != "" {
-		modeCount++
-	}
-	if configPath != "" {
-		modeCount++
-	}
-	if stdio {
-		modeCount++
-	}
-
-	if modeCount == 0 {
-		return fmt.Errorf("--url, --config, or --stdio is required for list command")
-	}
-	if modeCount > 1 {
-		return fmt.Errorf("--url, --config, and --stdio are mutually exclusive")
-	}
-
 	jsonOutput := cmd.Bool("json")
 	serverFilter := cmd.String("server")
 	queryFilter := cmd.String("query")

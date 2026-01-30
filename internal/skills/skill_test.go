@@ -9,13 +9,13 @@ import (
 
 func TestParseFrontmatter(t *testing.T) {
 	tests := []struct {
-		name        string
-		content     string
-		wantName    string
-		wantDesc    string
-		wantMeta    map[string]any
-		wantBody    string
-		wantErr     bool
+		name     string
+		content  string
+		wantName string
+		wantDesc string
+		wantMeta map[string]any
+		wantBody string
+		wantErr  bool
 	}{
 		{
 			name: "valid frontmatter",

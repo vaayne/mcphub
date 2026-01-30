@@ -36,56 +36,36 @@ Tool names can be in either format:
 
 Examples:
   # Invoke a tool with no parameters
-  mh -u http://localhost:3000 invoke myTool
+  mh invoke -u http://localhost:3000 myTool
 
   # Invoke a tool with JSON parameters
-  mh -u http://localhost:3000 invoke myTool '{"key": "value"}'
+  mh invoke -u http://localhost:3000 myTool '{"key": "value"}'
 
   # Invoke a tool with parameters from stdin
-  echo '{"key": "value"}' | mh -u http://localhost:3000 invoke myTool -
+  echo '{"key": "value"}' | mh invoke -u http://localhost:3000 myTool -
 
   # Invoke a tool with JSON output
-  mh -u http://localhost:3000 invoke myTool '{"key": "value"}' --json
+  mh invoke -u http://localhost:3000 myTool '{"key": "value"}' --json
 
   # Invoke a tool from config (stdio/http/sse)
-  mh -c config.json invoke githubSearchRepos '{"query": "mcp"}'
+  mh invoke -c config.json githubSearchRepos '{"query": "mcp"}'
 
   # Invoke a tool from a stdio MCP server
-  mh --stdio invoke echo '{"message": "hello"}' -- npx @modelcontextprotocol/server-everything`,
+  mh invoke --stdio echo '{"message": "hello"}' -- npx @modelcontextprotocol/server-everything`,
+	Flags:  MCPClientFlags(),
+	Before: ValidateMCPClientFlags,
 	Action: runInvoke,
 }
 
 func runInvoke(ctx context.Context, cmd *ucli.Command) error {
-	// Filter out args after "--" (used for stdio command)
 	args := cmd.Args().Slice()
 	filteredArgs := filterArgsBeforeDash(args)
 	if len(filteredArgs) < 1 || len(filteredArgs) > 2 {
 		return fmt.Errorf("accepts between 1 and 2 arg(s), received %d", len(filteredArgs))
 	}
 
-	url := cmd.String("url")
 	configPath := cmd.String("config")
 	stdio := cmd.Bool("stdio")
-
-	// Count how many modes are specified
-	modeCount := 0
-	if url != "" {
-		modeCount++
-	}
-	if configPath != "" {
-		modeCount++
-	}
-	if stdio {
-		modeCount++
-	}
-
-	if modeCount == 0 {
-		return fmt.Errorf("--url, --config, or --stdio is required for invoke command")
-	}
-	if modeCount > 1 {
-		return fmt.Errorf("--url, --config, and --stdio are mutually exclusive")
-	}
-
 	toolName := filteredArgs[0]
 	jsonOutput := cmd.Bool("json")
 

@@ -32,11 +32,13 @@ internal/
 
 ## Three Modes
 
-**Server mode** (`mh serve` or `mh -c`): Starts an MCP hub server that aggregates multiple backend servers. AI clients connect to the hub.
+**Server mode** (`mh serve -c config.json`): Starts an MCP hub server that aggregates multiple backend servers. AI clients connect to the hub.
 
-**CLI mode** (`mh list/inspect/invoke/exec`): Interact with MCP servers directly from terminal. Supports config file (`-c`), remote URL (`-u`), or stdio subprocess (`--stdio`).
+**CLI mode** (`mh list`, `mh inspect`, `mh invoke`, `mh exec`): Interact with MCP servers directly from terminal. Flags come after the subcommand: `-c` for config file, `-u` for remote URL, or `--stdio` for subprocess.
 
-**Skill mode**: Generate lightweight skill files that describe MCP tools without loading them into context. AI agents read the skill, then use `mh` CLI to discover/invoke tools on-demand. Keeps context small while accessing hundreds of tools. See `mcp-skill-gen` workflow.
+**Skill mode**: Two workflows for extending agent capabilities:
+- **Discover skills**: `mh skills find/add` to browse and install from [skills.sh](https://skills.sh)
+- **Generate skills**: Use `mcp-skill-gen` workflow to create skill files from MCP servers. AI agents read the skill, then use `mh` CLI to discover/invoke tools on-demand. Keeps context small while accessing hundreds of tools.
 
 Server and CLI modes share connection logic in `internal/cli/` (config_client, remote, stdio_client).
 

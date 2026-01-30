@@ -5,9 +5,11 @@ go 1.25
 require (
 	github.com/dop251/goja v0.0.0-20251121114222-56b1242a5f86
 	github.com/dop251/goja_nodejs v0.0.0-20251015164255-5e94316bedaf
+	github.com/go-git/go-git/v5 v5.16.4
 	github.com/modelcontextprotocol/go-sdk v1.2.0
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v3 v3.6.2
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -22,7 +24,6 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
-	github.com/go-git/go-git/v5 v5.16.4 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/jsonschema-go v0.3.0 // indirect
@@ -41,5 +42,4 @@ require (
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

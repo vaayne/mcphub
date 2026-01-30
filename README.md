@@ -13,11 +13,11 @@ If you're using multiple MCP servers (GitHub, filesystem, databases, etc.), mana
 
 ## Three Ways to Use It
 
-**Server mode** - Run `mh serve` (or just `mh -c config.json`) to start a hub that aggregates multiple MCP servers. Your AI client connects to the hub, and the hub routes tool calls to the right backend.
+**Server mode** - Run `mh serve -c config.json` to start a hub that aggregates multiple MCP servers. Your AI client connects to the hub, and the hub routes tool calls to the right backend.
 
 **CLI mode** - Use `mh list`, `mh inspect`, `mh invoke` to interact with MCP servers directly from your terminal. Great for debugging, testing, or scripting.
 
-**Skill mode** - Generate lightweight "skill" files that describe MCP tools without loading them all into context. The AI reads the skill file, then uses `mh` CLI to discover and invoke tools on-demand. This keeps context small while still having access to hundreds of tools.
+**Skill mode** - Discover skills from [skills.sh](https://skills.sh) or generate lightweight "skill" files from MCP servers. Skills teach AI agents how to use tools on-demand without loading all schemas into context. Use `mh skills find/add` to browse the ecosystem, or follow the `mcp-skill-gen` workflow to create skills from any MCP server.
 
 All modes support the same connection types: local servers via config, remote HTTP/SSE endpoints via URL, or stdio subprocesses.
 
@@ -40,11 +40,11 @@ cat > config.json << 'EOF'
 EOF
 
 # Run as hub server
-mh -c config.json
+mh serve -c config.json
 
 # Or explore tools from CLI
-mh -c config.json list
-mh -c config.json invoke filesystemReadFile '{"path": "/tmp/test.txt"}'
+mh list -c config.json
+mh invoke -c config.json filesystemReadFile '{"path": "/tmp/test.txt"}'
 ```
 
 ## Configuration
@@ -95,28 +95,25 @@ mh serve -c config.json
 
 # Start hub on HTTP (for web clients)
 mh serve -c config.json -t http -p 8080
-
-# Shorthand: mh -c runs serve automatically
-mh -c config.json
 ```
 
 ### CLI Mode
 
 ```bash
 # From config file (connects to all servers defined in config)
-mh -c config.json list
-mh -c config.json inspect githubSearchRepos
-mh -c config.json invoke githubSearchRepos '{"query": "mcp"}'
+mh list -c config.json
+mh inspect -c config.json githubSearchRepos
+mh invoke -c config.json githubSearchRepos '{"query": "mcp"}'
 
 # From remote URL
-mh -u https://mcp.example.com list
-mh -u http://localhost:3000 -t sse invoke some_tool '{"arg": "value"}'
+mh list -u https://mcp.example.com
+mh invoke -u http://localhost:3000 -t sse some_tool '{"arg": "value"}'
 
 # From stdio subprocess
-mh --stdio list -- npx @modelcontextprotocol/server-everything
+mh list --stdio -- npx @modelcontextprotocol/server-everything
 
 # Enable debug logging
-mh -c config.json -v list
+mh list -c config.json --verbose
 ```
 
 ## Built-in Tools
@@ -164,29 +161,45 @@ mise run build
 
 Requires Go 1.23+.
 
-## Skill Generation
+## Skills
 
-If you're using an AI coding agent (like Claude with pi), loading all MCP tools into context can be expensive. Instead, generate a "skill" file that teaches the agent how to discover and use tools on-demand:
+Skills are modular packages that extend AI agent capabilities. MCP Hub supports two workflows:
+
+### Discover & Install Skills
+
+Browse and install skills from [skills.sh](https://skills.sh), the open agent skills ecosystem:
 
 ```bash
-# Generate skill from remote MCP server
-mh -u https://mcp.exa.ai list   # Preview tools first
-# Then create a SKILL.md that references this URL
+# Search for skills by keyword
+mh skills find react
+mh skills find "code review"
 
-# Generate skill from config
-mh -c config.json list          # Preview aggregated tools
-# Create a SKILL.md that uses mh -c to invoke tools
+# Install a skill
+mh skills add anthropics/skills@mcp-builder
+mh skills add vercel-labs/agent-skills@react-best-practices
 ```
 
-The generated skill file contains:
+Skills are installed to `.agents/skills/<skill-name>/` in the current directory.
 
-- Service URL and transport type
+### Generate Skills from MCP Servers
+
+If you're using an AI coding agent, loading all MCP tools into context can be expensive. Instead, generate a "skill" file that teaches the agent how to discover and use tools on-demand.
+
+```bash
+# Preview tools from a remote MCP server
+mh list -u https://mcp.exa.ai
+
+# Preview tools from config
+mh list -c config.json
+```
+
+Then use the `mcp-skill-gen` workflow (in `skills/mcp-skill-gen/`) to generate a SKILL.md that contains:
+
+- Service URL/config and transport type
 - List of available tools with descriptions
 - Commands for `mh list`, `mh inspect`, `mh invoke`
 
 When the AI needs a tool, it reads the skill, runs `mh inspect` to get the schema, then `mh invoke` to call it. No need to load all tool schemas upfront.
-
-See the [mcp-skill-gen](https://github.com/vaayne/mcphub) workflow for automated skill generation.
 
 ## Troubleshooting
 
