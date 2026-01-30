@@ -37,6 +37,7 @@ internal/
 **CLI mode** (`mh list`, `mh inspect`, `mh invoke`, `mh exec`): Interact with MCP servers directly from terminal. Flags come after the subcommand: `-c` for config file, `-u` for remote URL, or `--stdio` for subprocess.
 
 **Skill mode**: Two workflows for extending agent capabilities:
+
 - **Discover skills**: `mh skills find/add` to browse and install from [skills.sh](https://skills.sh)
 - **Generate skills**: Use `mcp-skill-gen` workflow to create skill files from MCP servers. AI agents read the skill, then use `mh` CLI to discover/invoke tools on-demand. Keeps context small while accessing hundreds of tools.
 
