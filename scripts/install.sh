@@ -11,7 +11,7 @@
 set -e
 
 # Configuration
-REPO="vaayne/mcpx"
+REPO="vaayne/mcphub"
 BINARY_NAME="mh"
 RELEASES_URL="https://github.com/${REPO}/releases"
 
