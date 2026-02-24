@@ -123,3 +123,49 @@ func TestFindSkillDirEmptyDirectory(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no SKILL.md found")
 }
+
+func TestFindAllSkillDirs(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create skill1/SKILL.md
+	skill1Dir := filepath.Join(tmpDir, "skill1")
+	require.NoError(t, os.MkdirAll(skill1Dir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(skill1Dir, "SKILL.md"), []byte("# Skill 1"), 0644))
+
+	// Create skill2/SKILL.md
+	skill2Dir := filepath.Join(tmpDir, "skill2")
+	require.NoError(t, os.MkdirAll(skill2Dir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(skill2Dir, "SKILL.md"), []byte("# Skill 2"), 0644))
+
+	// Create .git/SKILL.md (should be skipped)
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.MkdirAll(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "SKILL.md"), []byte("# Git"), 0644))
+
+	dirs, err := FindAllSkillDirs(tmpDir)
+	require.NoError(t, err)
+	assert.Len(t, dirs, 2)
+	assert.Contains(t, dirs, skill1Dir)
+	assert.Contains(t, dirs, skill2Dir)
+}
+
+func TestFindAllSkillDirsEmpty(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	_, err := FindAllSkillDirs(tmpDir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no SKILL.md found")
+}
+
+func TestFindAllSkillDirsSingle(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	skillDir := filepath.Join(tmpDir, "only-skill")
+	require.NoError(t, os.MkdirAll(skillDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# Only"), 0644))
+
+	dirs, err := FindAllSkillDirs(tmpDir)
+	require.NoError(t, err)
+	assert.Len(t, dirs, 1)
+	assert.Equal(t, skillDir, dirs[0])
+}

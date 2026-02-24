@@ -196,51 +196,109 @@ func runSkillsAdd(ctx context.Context, cmd *ucli.Command) error {
 }
 
 func handleGitSource(ctx context.Context, parsed *skills.ParsedSource, cwd string, listOnly bool) error {
-	if listOnly {
-		return fmt.Errorf("--list is not supported for git sources; use @skill to filter")
-	}
+	fmt.Printf("Fetching skills from %s...\n", parsed.URL)
 
-	fmt.Printf("Fetching skill from %s...\n", parsed.URL)
-
-	localDir, err := skills.FetchGitSkill(ctx, skills.GitSource{
+	gitSrc := skills.GitSource{
 		URL:         parsed.URL,
 		Ref:         parsed.Ref,
 		Subpath:     parsed.Subpath,
 		SkillFilter: parsed.SkillFilter,
-	})
+	}
+
+	// When a specific skill is requested, fetch just that one
+	if parsed.SkillFilter != "" {
+		if listOnly {
+			return fmt.Errorf("--list is not supported with @skill filter")
+		}
+
+		localDir, err := skills.FetchGitSkill(ctx, gitSrc)
+		if err != nil {
+			return err
+		}
+
+		targetDir := filepath.Join(cwd, ".agents", "skills", localDir.SkillName)
+		if err := skills.InstallSkill(localDir.Path, targetDir); err != nil {
+			return err
+		}
+
+		fmt.Printf("✓ Installed %s to %s\n", localDir.SkillName, targetDir)
+		return nil
+	}
+
+	// No filter: discover all skills in the repo
+	allSkills, err := skills.FetchAllGitSkills(ctx, gitSrc)
 	if err != nil {
 		return err
 	}
 
-	targetDir := filepath.Join(cwd, ".agents", "skills", localDir.SkillName)
-	if err := skills.InstallSkill(localDir.Path, targetDir); err != nil {
-		return err
+	if listOnly {
+		fmt.Printf("\nFound %d skills:\n\n", len(allSkills))
+		for _, s := range allSkills {
+			fmt.Printf("  %s\n", s.SkillName)
+		}
+		return nil
 	}
 
-	fmt.Printf("✓ Installed %s to %s\n", localDir.SkillName, targetDir)
+	for _, localDir := range allSkills {
+		targetDir := filepath.Join(cwd, ".agents", "skills", localDir.SkillName)
+		if err := skills.InstallSkill(localDir.Path, targetDir); err != nil {
+			return err
+		}
+		fmt.Printf("✓ Installed %s to %s\n", localDir.SkillName, targetDir)
+	}
+
+	fmt.Printf("\nInstalled %d skills.\n", len(allSkills))
 	return nil
 }
 
 func handleLocalSource(_ context.Context, parsed *skills.ParsedSource, cwd string, listOnly bool) error {
-	// Find SKILL.md in local path
-	skillDir, err := skills.FindSkillDir(parsed.LocalPath, parsed.SkillFilter)
+	// When a specific skill is requested, find just that one
+	if parsed.SkillFilter != "" {
+		skillDir, err := skills.FindSkillDir(parsed.LocalPath, parsed.SkillFilter)
+		if err != nil {
+			return err
+		}
+
+		skillName := filepath.Base(skillDir)
+
+		if listOnly {
+			fmt.Printf("Found skill: %s\n", skillName)
+			return nil
+		}
+
+		targetDir := filepath.Join(cwd, ".agents", "skills", skillName)
+		if err := skills.InstallSkill(skillDir, targetDir); err != nil {
+			return err
+		}
+
+		fmt.Printf("✓ Installed %s to %s\n", skillName, targetDir)
+		return nil
+	}
+
+	// No filter: discover all skills in the directory
+	allDirs, err := skills.FindAllSkillDirs(parsed.LocalPath)
 	if err != nil {
 		return err
 	}
 
-	skillName := filepath.Base(skillDir)
-
 	if listOnly {
-		fmt.Printf("Found skill: %s\n", skillName)
+		fmt.Printf("Found %d skills:\n\n", len(allDirs))
+		for _, dir := range allDirs {
+			fmt.Printf("  %s\n", filepath.Base(dir))
+		}
 		return nil
 	}
 
-	targetDir := filepath.Join(cwd, ".agents", "skills", skillName)
-	if err := skills.InstallSkill(skillDir, targetDir); err != nil {
-		return err
+	for _, skillDir := range allDirs {
+		skillName := filepath.Base(skillDir)
+		targetDir := filepath.Join(cwd, ".agents", "skills", skillName)
+		if err := skills.InstallSkill(skillDir, targetDir); err != nil {
+			return err
+		}
+		fmt.Printf("✓ Installed %s to %s\n", skillName, targetDir)
 	}
 
-	fmt.Printf("✓ Installed %s to %s\n", skillName, targetDir)
+	fmt.Printf("\nInstalled %d skills.\n", len(allDirs))
 	return nil
 }
 

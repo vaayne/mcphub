@@ -54,6 +54,37 @@ func FetchGitSkill(ctx context.Context, src GitSource) (*LocalSkillDir, error) {
 	}, nil
 }
 
+// FetchAllGitSkills clones or updates a git repo and finds all skill directories.
+func FetchAllGitSkills(ctx context.Context, src GitSource) ([]*LocalSkillDir, error) {
+	cacheDir, err := GetCacheDir(src.URL, src.Ref)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cloneOrUpdate(ctx, src.URL, src.Ref, cacheDir); err != nil {
+		return nil, err
+	}
+
+	searchDir := cacheDir
+	if src.Subpath != "" {
+		searchDir = filepath.Join(cacheDir, src.Subpath)
+	}
+
+	dirs, err := FindAllSkillDirs(searchDir)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]*LocalSkillDir, len(dirs))
+	for i, dir := range dirs {
+		results[i] = &LocalSkillDir{
+			Path:      dir,
+			SkillName: filepath.Base(dir),
+		}
+	}
+	return results, nil
+}
+
 // GetCacheDir returns the cache directory for a git repo URL and optional ref.
 // Format: ~/.cache/mcphub/skills/<owner>/<repo> (or <owner>/<repo>@<ref> if ref specified)
 func GetCacheDir(repoURL, ref string) (string, error) {
@@ -208,4 +239,35 @@ func FindSkillDir(searchDir, skillName string) (string, error) {
 	}
 
 	return foundPath, nil
+}
+
+// FindAllSkillDirs searches for all directories containing a SKILL.md file.
+func FindAllSkillDirs(searchDir string) ([]string, error) {
+	var dirs []string
+
+	err := filepath.Walk(searchDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() && info.Name() == ".git" {
+			return filepath.SkipDir
+		}
+
+		if !info.IsDir() && strings.EqualFold(info.Name(), "skill.md") {
+			dirs = append(dirs, filepath.Dir(path))
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to search for skills: %w", err)
+	}
+
+	if len(dirs) == 0 {
+		return nil, fmt.Errorf("no SKILL.md found in repository")
+	}
+
+	return dirs, nil
 }
