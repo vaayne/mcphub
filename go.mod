@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/dop251/goja v0.0.0-20251121114222-56b1242a5f86
 	github.com/dop251/goja_nodejs v0.0.0-20251015164255-5e94316bedaf
-	github.com/go-git/go-git/v5 v5.16.4
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/modelcontextprotocol/go-sdk v1.2.0
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v3 v3.6.2
