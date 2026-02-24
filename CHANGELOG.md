@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-02-24
+
+### Fixed
+
+- `mh skills add` now installs all skills from repo when no `--skill` filter is specified
+- Update REPO from mcpx to mcphub in install script
+
+### Changed
+
+- Remove legacy vskills-scripts directory
+
+### Security
+
+- Bump golang.org/x/crypto from 0.37.0 to 0.45.0
+
 ## [0.2.0] - 2026-01-30
 
 ### Added
