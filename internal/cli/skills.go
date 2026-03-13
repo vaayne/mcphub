@@ -2,10 +2,8 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -91,65 +89,30 @@ Examples:
 	Action: runSkillsAdd,
 }
 
-type skillsSearchResult struct {
-	ID       string `json:"id"`
-	SkillID  string `json:"skillId"`
-	Name     string `json:"name"`
-	Installs int    `json:"installs"`
-	Source   string `json:"source"`
-}
-
-type skillsSearchResponse struct {
-	Query      string               `json:"query"`
-	SearchType string               `json:"searchType"`
-	Skills     []skillsSearchResult `json:"skills"`
-	Count      int                  `json:"count"`
-}
-
 func runSkillsFind(ctx context.Context, cmd *ucli.Command) error {
 	query := strings.TrimSpace(strings.Join(cmd.Args().Slice(), " "))
 	if query == "" {
 		return fmt.Errorf("query is required")
 	}
 
-	limit := cmd.Int("limit")
+	limit := int(cmd.Int("limit"))
 
-	apiURL := fmt.Sprintf("https://skills.sh/api/search?q=%s&limit=%d",
-		url.QueryEscape(query), limit)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	results, err := skills.Search(ctx, query, limit)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return err
 	}
 
-	req.Header.Set("User-Agent", "mh")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to search skills: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("skills.sh API returned status %d (%s)", resp.StatusCode, resp.Status)
-	}
-
-	var result skillsSearchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	if len(result.Skills) == 0 {
+	if len(results) == 0 {
 		fmt.Printf("No skills found for query: %s\n", query)
 		fmt.Println("\nTip: Try different keywords or browse https://skills.sh/")
 		return nil
 	}
 
-	fmt.Printf("Found %d skills:\n\n", result.Count)
+	fmt.Printf("Found %d skills:\n\n", len(results))
 	fmt.Println("Install with: mh skills add owner/repo@skill")
 	fmt.Println()
 
-	for _, skill := range result.Skills {
+	for _, skill := range results {
 		installRef := fmt.Sprintf("%s@%s", skill.Source, skill.SkillID)
 		browseRef := skill.ID
 		if browseRef == "" {
