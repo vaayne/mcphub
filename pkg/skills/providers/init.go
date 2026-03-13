@@ -1,6 +1,6 @@
 package providers
 
-import "github.com/vaayne/mcphub/internal/skills"
+import "github.com/vaayne/mcphub/pkg/skills"
 
 func init() {
 	// Register providers in priority order

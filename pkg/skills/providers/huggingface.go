@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vaayne/mcphub/internal/skills"
+	"github.com/vaayne/mcphub/pkg/skills"
 )
 
 type HuggingFaceProvider struct{}

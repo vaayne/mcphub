@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	ucli "github.com/urfave/cli/v3"
-	"github.com/vaayne/mcphub/internal/skills"
-	_ "github.com/vaayne/mcphub/internal/skills/providers" // Register providers
+	"github.com/vaayne/mcphub/pkg/skills"
+	_ "github.com/vaayne/mcphub/pkg/skills/providers" // Register providers
 )
 
 // SkillsCmd is the skills subcommand for discovering and installing agent skills
