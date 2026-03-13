@@ -32,7 +32,8 @@ The MCP Hub CLI (`mh skills`) is the package manager for the open agent skills e
 **Key commands:**
 
 - `mh skills find [query]` - Search for skills by keyword
-- `mh skills add <owner/repo@skill>` - Install a skill from GitHub
+- `mh skills add owner/repo@skill` - Install a specific skill from a repository
+- `mh skills add owner/repo --skill skill-name` - Equivalent form when the source contains multiple skills
 
 **Browse skills at:** https://skills.sh/
 
@@ -65,12 +66,17 @@ The command will return results like:
 ```
 Found 10 skills:
 
-Install with: mh skills add <owner/repo@skill>
+Install with: mh skills add owner/repo@skill
 
 anthropics/skills@mcp-builder
   mcp-builder (4060 installs)
   └ https://skills.sh/anthropics/skills/mcp-builder
 ```
+
+Important:
+
+- Search results may display a package path or URL for browsing, but the safest install form is `owner/repo@skill`
+- For example, install PinchTab with `mh skills add pinchtab/pinchtab@pinchtab`, not `@pinchtab/pinchtab/pinchtab`
 
 ### Step 3: Present Options to the User
 
@@ -79,6 +85,13 @@ When you find relevant skills, present them to the user with:
 1. The skill name and what it does
 2. The install command they can run
 3. A link to learn more at skills.sh
+
+Always normalize the install command into a valid `mh skills add` form before suggesting it. Prefer:
+
+- `owner/repo@skill`
+- or `owner/repo --skill skill-name`
+
+Do not blindly echo display-only identifiers if they are not directly installable.
 
 Example response:
 
@@ -96,7 +109,13 @@ Learn more: https://skills.sh/anthropics/skills/mcp-builder
 If the user wants to proceed, you can install the skill for them:
 
 ```bash
-mh skills add <owner/repo@skill>
+mh skills add owner/repo@skill
+```
+
+Or, for a multi-skill repository:
+
+```bash
+mh skills add owner/repo --skill skill-name
 ```
 
 Skills are installed to `.agents/skills/<skill>` in the current directory.

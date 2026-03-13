@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Skills subcommand**: Discover and install agent skills from skills.sh
   - `mh skills find [query]` - Search for skills by keyword
-  - `mh skills add <owner/repo@skill>` - Install a skill from GitHub
+  - `mh skills add owner/repo@skill` - Install a skill from GitHub
   - Caches repositories at `~/.cache/mcphub/skills/<owner>/<repo>`
   - Installs skills to `.agents/skills/<skill>` in current directory
 

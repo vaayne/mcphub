@@ -92,10 +92,11 @@ Examples:
 }
 
 type skillsSearchResult struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Installs  int    `json:"installs"`
-	TopSource string `json:"topSource"`
+	ID       string `json:"id"`
+	SkillID  string `json:"skillId"`
+	Name     string `json:"name"`
+	Installs int    `json:"installs"`
+	Source   string `json:"source"`
 }
 
 type skillsSearchResponse struct {
@@ -145,13 +146,19 @@ func runSkillsFind(ctx context.Context, cmd *ucli.Command) error {
 	}
 
 	fmt.Printf("Found %d skills:\n\n", result.Count)
-	fmt.Println("Install with: mh skills add <owner/repo@skill>")
+	fmt.Println("Install with: mh skills add owner/repo@skill")
 	fmt.Println()
 
 	for _, skill := range result.Skills {
-		fmt.Printf("%s@%s\n", skill.TopSource, skill.ID)
+		installRef := fmt.Sprintf("%s@%s", skill.Source, skill.SkillID)
+		browseRef := skill.ID
+		if browseRef == "" {
+			browseRef = installRef
+		}
+
+		fmt.Println(installRef)
 		fmt.Printf("  %s (%d installs)\n", skill.Name, skill.Installs)
-		fmt.Printf("  └ https://skills.sh/%s/%s\n\n", skill.TopSource, skill.ID)
+		fmt.Printf("  browse: https://skills.sh/%s\n\n", browseRef)
 	}
 
 	return nil
